@@ -23,6 +23,32 @@ export class App {
     this.renderCategoryFilters();
     this.renderGameCards();
     this.updateAudioButtons();
+    this.handleRouting();
+  }
+
+  handleRouting() {
+    window.addEventListener('hashchange', () => this.onHashChange());
+    this.onHashChange();
+  }
+
+  onHashChange() {
+    const raw = (window.location.hash || '').replace(/^#\/?/, '').trim();
+    if (!raw || raw === 'hub') {
+      if (this.gameView && this.gameView.classList.contains('active')) {
+        this.exitToHub(false);
+      }
+      return;
+    }
+
+    const match = raw.match(/^(?:game\/)?([a-z0-9-]+)$/i);
+    if (match) {
+      const gameId = match[1];
+      if (this.registry.getMeta(gameId)) {
+        if (!this.currentGame || !this.currentGameMeta || this.currentGameMeta.id !== gameId) {
+          this.launchGame(gameId, false);
+        }
+      }
+    }
   }
 
   cacheDOM() {
@@ -210,9 +236,13 @@ export class App {
     });
   }
 
-  launchGame(gameId) {
+  launchGame(gameId, updateHash = true) {
     this.currentGameMeta = this.registry.getMeta(gameId);
     if (!this.currentGameMeta) return;
+
+    if (updateHash && window.location.hash !== `#/game/${gameId}`) {
+      window.location.hash = `#/game/${gameId}`;
+    }
 
     // Track play count
     StorageManager.incrementPlayCount(gameId);
@@ -303,7 +333,10 @@ export class App {
     this.currentGame.restart();
   }
 
-  exitToHub() {
+  exitToHub(updateHash = true) {
+    if (updateHash && window.location.hash && window.location.hash !== '#/hub') {
+      window.location.hash = '#/hub';
+    }
     this.audio.playClick();
     this.hideGameOverModal();
 

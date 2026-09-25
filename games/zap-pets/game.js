@@ -9,10 +9,9 @@ export const CHARACTERS = {
     icon: '🦊',
     color: '#f59e0b',
     bodyColor: 0xf59e0b,
-    accentColor: 0x1e293b,
-    glowColor: '#fbbf24',
+    accentColor: 0xca8a04,
     maxHp: 100,
-    speed: 15.5,
+    speed: 16.0,
     attackRate: 0.32,
     bulletDamage: 24,
     bulletColor: 0x38bdf8,
@@ -21,14 +20,14 @@ export const CHARACTERS = {
       key: 'SPACE',
       icon: '⚡',
       cd: 3.2,
-      desc: 'Warp ahead leaving an electrified trail that damages and shocks enemies.'
+      desc: 'Warp ahead leaving an electrified trail.'
     },
     skill2: {
       name: 'Thunder Nova',
       key: 'E',
       icon: '💥',
       cd: 7.5,
-      desc: 'Release a 360° electromagnetic pulse pushing back all nearby enemies.'
+      desc: 'Release a 360° electromagnetic pulse pushing back enemies.'
     }
   },
   bear: {
@@ -39,10 +38,9 @@ export const CHARACTERS = {
     color: '#0284c7',
     bodyColor: 0x0284c7,
     accentColor: 0x0369a1,
-    glowColor: '#38bdf8',
     maxHp: 175,
     speed: 12.0,
-    attackRate: 0.45,
+    attackRate: 0.44,
     bulletDamage: 40,
     bulletColor: 0x0ea5e9,
     skill1: {
@@ -50,14 +48,14 @@ export const CHARACTERS = {
       key: 'SPACE',
       icon: '💥',
       cd: 4.5,
-      desc: 'Slam the ground causing an earthquake that damages and stuns enemies.'
+      desc: 'Slam the ground causing an earthquake that stuns enemies.'
     },
     skill2: {
       name: 'Iron Fortress',
       key: 'E',
       icon: '🛡️',
       cd: 9.0,
-      desc: 'Deploy a protective barrier reducing 90% damage and reflecting attacks.'
+      desc: 'Deploy a protective shield reducing 90% damage.'
     }
   },
   bunny: {
@@ -68,9 +66,8 @@ export const CHARACTERS = {
     color: '#ec4899',
     bodyColor: 0xec4899,
     accentColor: 0xa855f7,
-    glowColor: '#f472b6',
     maxHp: 85,
-    speed: 14.8,
+    speed: 15.0,
     attackRate: 0.35,
     bulletDamage: 28,
     bulletColor: 0xa855f7,
@@ -79,14 +76,14 @@ export const CHARACTERS = {
       key: 'SPACE',
       icon: '❄️',
       cd: 3.6,
-      desc: 'Teleport forward and leave an icy decoy that freezes enemies in place.'
+      desc: 'Teleport forward leaving an icy decoy trap.'
     },
     skill2: {
       name: 'Blizzard Storm',
       key: 'E',
       icon: '🌪️',
       cd: 8.5,
-      desc: 'Summon a freezing blizzard vortex that slows and damages all foes in front.'
+      desc: 'Summon a blizzard vortex slowing and damaging enemies.'
     }
   }
 };
@@ -96,60 +93,71 @@ export default class ZapPets3DGame extends BaseGame {
     this.selectedCharKey = 'fox';
     this.charConfig = CHARACTERS.fox;
 
+    // Calculate reliable dimensions
+    const rect = this.container.getBoundingClientRect();
+    const stageWidth = Math.max(340, Math.min(rect.width > 200 ? rect.width - 20 : 880, 960));
+    const stageHeight = Math.max(380, Math.min(rect.height > 200 ? rect.height - 30 : 580, 620));
+
     this.container.innerHTML = `
-      <div class="zappets-wrapper" style="position:relative; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; user-select:none;">
+      <div class="zappets-wrapper" style="position:relative; width:${stageWidth}px; height:${stageHeight}px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; user-select:none; border-radius:14px; box-shadow:0 12px 35px rgba(0,0,0,0.7); background:#070913;">
         
-        <!-- Top HUD -->
+        <!-- Top HUD Bar -->
         <div class="zp-hud-top" style="position:absolute; top:8px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none; z-index:15;">
           
-          <!-- Left: Hero, Level & EXP Bar -->
-          <div style="display:flex; flex-direction:column; gap:4px; min-width:140px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span id="zp-hero-tag" style="background:#1e1b4b; border:1px solid #38bdf8; color:#38bdf8; font-weight:800; font-size:0.75rem; padding:2px 8px; border-radius:10px;">🦊 Fox</span>
-              <span id="zp-level-badge" style="background:#eab308; color:#0f172a; font-weight:800; font-size:0.75rem; padding:2px 6px; border-radius:10px;">LV 1</span>
-              <span id="zp-coins-text" style="color:#fbbf24; font-weight:700; font-size:0.85rem;">🪙 0</span>
+          <!-- Left: Hero Switcher & EXP Bar -->
+          <div style="display:flex; flex-direction:column; gap:4px; pointer-events:auto;">
+            <!-- Hero Switcher Pills -->
+            <div id="zp-hero-switcher" style="display:flex; gap:4px; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); padding:3px; border-radius:12px; border:1px solid rgba(255,255,255,0.15);">
+              <button class="zp-hero-btn" data-hero="fox" style="border:none; background:#eab308; color:#0f172a; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:8px; cursor:pointer; font-family:var(--font-display);">🦊 Fox</button>
+              <button class="zp-hero-btn" data-hero="bear" style="border:none; background:rgba(255,255,255,0.08); color:#94a3b8; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:8px; cursor:pointer; font-family:var(--font-display);">🐻 Bear</button>
+              <button class="zp-hero-btn" data-hero="bunny" style="border:none; background:rgba(255,255,255,0.08); color:#94a3b8; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:8px; cursor:pointer; font-family:var(--font-display);">🐰 Bunny</button>
             </div>
-            <div style="width:140px; height:7px; background:rgba(255,255,255,0.15); border-radius:4px; overflow:hidden; border:1px solid rgba(255,255,255,0.2);">
+            
+            <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
+              <span id="zp-level-badge" style="background:#eab308; color:#0f172a; font-weight:800; font-size:0.7rem; padding:1px 6px; border-radius:8px;">LV 1</span>
+              <span id="zp-coins-text" style="color:#fbbf24; font-weight:700; font-size:0.8rem;">🪙 0</span>
+            </div>
+            <div style="width:130px; height:6px; background:rgba(255,255,255,0.15); border-radius:3px; overflow:hidden; border:1px solid rgba(255,255,255,0.2);">
               <div id="zp-exp-fill" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #06b6d4); transition:width 0.15s ease;"></div>
             </div>
           </div>
 
           <!-- Center: Wave & Boss Bar -->
           <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-            <div style="background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:4px 18px; font-family:var(--font-display); font-size:0.95rem; font-weight:800; color:#f8fafc; letter-spacing:0.5px;">
+            <div style="background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:3px 16px; font-family:var(--font-display); font-size:0.9rem; font-weight:800; color:#f8fafc; letter-spacing:0.5px;">
               WAVE <span id="zp-wave-num" style="color:#eab308;">1</span> • <span id="zp-wave-timer">30</span>s
             </div>
-            <div id="zp-boss-bar" style="display:none; width:220px; flex-direction:column; align-items:center;">
-              <span style="font-size:0.75rem; color:#ef4444; font-weight:700; margin-bottom:2px;">⚠️ GOLIATH BOSS ⚠️</span>
-              <div style="width:100%; height:8px; background:rgba(0,0,0,0.6); border:1px solid #ef4444; border-radius:4px; overflow:hidden;">
+            <div id="zp-boss-bar" style="display:none; width:180px; flex-direction:column; align-items:center;">
+              <span style="font-size:0.7rem; color:#ef4444; font-weight:700; margin-bottom:2px;">⚠️ GOLIATH BOSS ⚠️</span>
+              <div style="width:100%; height:7px; background:rgba(0,0,0,0.6); border:1px solid #ef4444; border-radius:4px; overflow:hidden;">
                 <div id="zp-boss-fill" style="width:100%; height:100%; background:#ef4444;"></div>
               </div>
             </div>
           </div>
 
           <!-- Right: Minimap Radar -->
-          <div style="position:relative; width:80px; height:80px; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:10px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.5);">
-            <canvas id="zp-minimap" width="80" height="80" style="display:block;"></canvas>
+          <div style="position:relative; width:75px; height:75px; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:10px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+            <canvas id="zp-minimap" width="75" height="75" style="display:block;"></canvas>
           </div>
         </div>
 
         <!-- 3D Canvas Mounting Container -->
-        <div id="zp-webgl-container" style="width:100%; height:100%; max-width:960px; max-height:640px; border-radius:14px; overflow:hidden; box-shadow:0 12px 35px rgba(0,0,0,0.7); position:relative;"></div>
+        <div id="zp-webgl-container" style="width:${stageWidth}px; height:${stageHeight}px; position:absolute; inset:0;"></div>
 
         <!-- Touch Controls Layer -->
         <div class="zp-touch-layer" style="position:absolute; inset:0; pointer-events:none; z-index:20;">
-          <div id="zp-joystick-zone" style="position:absolute; bottom:20px; left:20px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.06); border:2px dashed rgba(255,255,255,0.2); pointer-events:auto; display:none; align-items:center; justify-content:center;">
-            <div id="zp-joystick-knob" style="width:48px; height:48px; border-radius:50%; background:#38bdf8; box-shadow:0 0 15px #38bdf8; transform:translate(0,0);"></div>
+          <div id="zp-joystick-zone" style="position:absolute; bottom:16px; left:16px; width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,0.06); border:2px dashed rgba(255,255,255,0.2); pointer-events:auto; display:none; align-items:center; justify-content:center;">
+            <div id="zp-joystick-knob" style="width:44px; height:44px; border-radius:50%; background:#38bdf8; box-shadow:0 0 15px #38bdf8; transform:translate(0,0);"></div>
           </div>
 
           <!-- Skills Buttons -->
-          <div class="zp-skills-container" style="position:absolute; bottom:24px; right:24px; display:flex; gap:14px; pointer-events:auto;">
-            <button id="zp-btn-skill1" style="width:58px; height:58px; border-radius:50%; background:#1e1b4b; border:2px solid #38bdf8; color:#fff; font-size:1.4rem; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 15px rgba(56,189,248,0.4); position:relative;">
+          <div class="zp-skills-container" style="position:absolute; bottom:20px; right:20px; display:flex; gap:12px; pointer-events:auto;">
+            <button id="zp-btn-skill1" style="width:54px; height:54px; border-radius:50%; background:#1e1b4b; border:2px solid #38bdf8; color:#fff; font-size:1.3rem; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 15px rgba(56,189,248,0.4); position:relative;">
               <span id="zp-s1-icon">⚡</span>
               <span style="font-size:0.55rem; font-weight:700; color:#38bdf8;">SPACE</span>
               <div id="zp-s1-cd" style="position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; color:#fff;"></div>
             </button>
-            <button id="zp-btn-skill2" style="width:58px; height:58px; border-radius:50%; background:#3b0764; border:2px solid #ec4899; color:#fff; font-size:1.4rem; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 15px rgba(236,72,153,0.4); position:relative;">
+            <button id="zp-btn-skill2" style="width:54px; height:54px; border-radius:50%; background:#3b0764; border:2px solid #ec4899; color:#fff; font-size:1.3rem; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 15px rgba(236,72,153,0.4); position:relative;">
               <span id="zp-s2-icon">💥</span>
               <span style="font-size:0.55rem; font-weight:700; color:#ec4899;">E</span>
               <div id="zp-s2-cd" style="position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; color:#fff;"></div>
@@ -158,24 +166,12 @@ export default class ZapPets3DGame extends BaseGame {
         </div>
 
         <!-- Level Up Modal Overlay -->
-        <div id="zp-upgrade-modal" style="position:absolute; inset:0; background:rgba(5,7,15,0.88); backdrop-filter:blur(10px); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
-          <div style="font-family:var(--font-display); font-size:1.6rem; font-weight:900; color:#fbbf24; margin-bottom:4px; text-shadow:0 0 20px #eab308;">
+        <div id="zp-upgrade-modal" style="position:absolute; inset:0; background:rgba(5,7,15,0.88); backdrop-filter:blur(10px); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px;">
+          <div style="font-family:var(--font-display); font-size:1.5rem; font-weight:900; color:#fbbf24; margin-bottom:4px; text-shadow:0 0 20px #eab308;">
             ⚡ LEVEL UP SURGE! ⚡
           </div>
-          <div style="color:#94a3b8; font-size:0.9rem; margin-bottom:24px;">Choose 1 upgrade perk to boost your cyber pet:</div>
-          <div id="zp-cards-container" style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center; max-width:680px;"></div>
-        </div>
-
-        <!-- Character Selection Screen (Initial) -->
-        <div id="zp-char-modal" style="position:absolute; inset:0; background:rgba(4,7,16,0.92); backdrop-filter:blur(14px); z-index:60; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
-          <div style="font-family:var(--font-display); font-size:1.8rem; font-weight:900; color:#f8fafc; margin-bottom:4px; text-shadow:0 0 25px rgba(56,189,248,0.5);">
-            SELECT YOUR CYBER PET
-          </div>
-          <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:24px;">Each pet possesses distinct 3D models and 2 unique signature skills</div>
-          <div id="zp-char-cards-list" style="display:flex; gap:18px; flex-wrap:wrap; justify-content:center; max-width:800px; margin-bottom:24px;"></div>
-          <button id="zp-btn-start-battle" class="btn" style="background:linear-gradient(135deg, #06b6d4, #3b82f6); border:none; padding:14px 44px; border-radius:10px; font-weight:800; font-family:var(--font-display); font-size:1.1rem; color:#fff; cursor:pointer; box-shadow:0 4px 20px rgba(6,182,212,0.4);">
-            START BATTLE ⚔️
-          </button>
+          <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:18px;">Choose 1 upgrade perk to boost your cyber pet:</div>
+          <div id="zp-cards-container" style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; max-width:640px;"></div>
         </div>
 
       </div>
@@ -185,8 +181,7 @@ export default class ZapPets3DGame extends BaseGame {
     this.minimapCanvas = this.container.querySelector('#zp-minimap');
     this.minimapCtx = this.minimapCanvas.getContext('2d');
 
-    // Cached UI elements
-    this.heroTag = this.container.querySelector('#zp-hero-tag');
+    // Cached elements
     this.levelBadge = this.container.querySelector('#zp-level-badge');
     this.coinsText = this.container.querySelector('#zp-coins-text');
     this.expFill = this.container.querySelector('#zp-exp-fill');
@@ -196,9 +191,6 @@ export default class ZapPets3DGame extends BaseGame {
     this.bossFill = this.container.querySelector('#zp-boss-fill');
     this.upgradeModal = this.container.querySelector('#zp-upgrade-modal');
     this.cardsContainer = this.container.querySelector('#zp-cards-container');
-    this.charModal = this.container.querySelector('#zp-char-modal');
-    this.charCardsList = this.container.querySelector('#zp-char-cards-list');
-    this.btnStartBattle = this.container.querySelector('#zp-btn-start-battle');
 
     this.btnSkill1 = this.container.querySelector('#zp-btn-skill1');
     this.s1Icon = this.container.querySelector('#zp-s1-icon');
@@ -210,7 +202,15 @@ export default class ZapPets3DGame extends BaseGame {
     this.joystickZone = this.container.querySelector('#zp-joystick-zone');
     this.joystickKnob = this.container.querySelector('#zp-joystick-knob');
 
-    this.renderCharacterSelectCards();
+    // Hero Switcher Event Bindings
+    this.heroBtns = this.container.querySelectorAll('.zp-hero-btn');
+    this.heroBtns.forEach(btn => {
+      this.addTrackedEventListener(btn, 'click', (e) => {
+        e.stopPropagation();
+        const heroKey = btn.dataset.hero;
+        this.switchHero(heroKey);
+      });
+    });
 
     // Check touch devices
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
@@ -246,63 +246,47 @@ export default class ZapPets3DGame extends BaseGame {
       this.triggerSkill2();
     });
 
-    this.addTrackedEventListener(this.btnStartBattle, 'click', () => {
-      this.charModal.style.display = 'none';
-      this.init3DScene();
-      this.start();
-    });
-
     const onResize = () => this.handleResize();
     this.addTrackedEventListener(window, 'resize', onResize);
+
+    // IMMEDIATELY INITIALIZE 3D SCENE so nothing is blank!
+    this.init3DScene(stageWidth, stageHeight);
   }
 
-  renderCharacterSelectCards() {
-    this.charCardsList.innerHTML = '';
-    Object.values(CHARACTERS).forEach(char => {
-      const isSelected = char.id === this.selectedCharKey;
-      const card = document.createElement('div');
-      card.style.cssText = `
-        width: 220px;
-        background: ${isSelected ? 'linear-gradient(145deg, #1e1b4b, #0f172a)' : 'rgba(255,255,255,0.03)'};
-        border: 2px solid ${isSelected ? char.color : 'rgba(255,255,255,0.1)'};
-        border-radius: 14px;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        cursor: pointer;
-        transition: transform 0.2s, border-color 0.2s;
-        box-shadow: ${isSelected ? `0 0 25px ${char.color}50` : 'none'};
-      `;
+  switchHero(heroKey) {
+    if (!CHARACTERS[heroKey]) return;
+    this.selectedCharKey = heroKey;
+    this.charConfig = CHARACTERS[heroKey];
 
-      card.innerHTML = `
-        <div style="font-size:2.8rem; margin-bottom:6px;">${char.icon}</div>
-        <div style="font-family:var(--font-display); font-size:1.15rem; font-weight:800; color:#fff; margin-bottom:2px;">${char.name}</div>
-        <div style="font-size:0.75rem; color:${char.color}; font-weight:700; margin-bottom:12px; text-transform:uppercase;">${char.role}</div>
-
-        <div style="width:100%; text-align:left; background:rgba(0,0,0,0.3); padding:8px 10px; border-radius:8px; margin-bottom:10px; font-size:0.75rem; color:#cbd5e1; line-height:1.4;">
-          <div style="font-weight:700; color:#38bdf8; margin-bottom:2px;">[SPACE] ${char.skill1.name}</div>
-          <div style="font-size:0.7rem; color:#94a3b8; margin-bottom:6px;">${char.skill1.desc}</div>
-          <div style="font-weight:700; color:#ec4899; margin-bottom:2px;">[E] ${char.skill2.name}</div>
-          <div style="font-size:0.7rem; color:#94a3b8;">${char.skill2.desc}</div>
-        </div>
-
-        <div style="font-size:0.75rem; color:#94a3b8; display:flex; justify-content:space-between; width:100%;">
-          <span>HP: <b style="color:#fff;">${char.maxHp}</b></span>
-          <span>SPD: <b style="color:#fff;">${char.speed}</b></span>
-          <span>DMG: <b style="color:#fff;">${char.bulletDamage}</b></span>
-        </div>
-      `;
-
-      card.onclick = () => {
-        this.selectedCharKey = char.id;
-        this.charConfig = char;
-        this.renderCharacterSelectCards();
-      };
-
-      this.charCardsList.appendChild(card);
+    // Update buttons UI
+    this.heroBtns.forEach(b => {
+      if (b.dataset.hero === heroKey) {
+        b.style.background = this.charConfig.color;
+        b.style.color = '#0f172a';
+      } else {
+        b.style.background = 'rgba(255,255,255,0.08)';
+        b.style.color = '#94a3b8';
+      }
     });
+
+    // Update skill buttons icons
+    this.s1Icon.textContent = this.charConfig.skill1.icon;
+    this.s2Icon.textContent = this.charConfig.skill2.icon;
+
+    // Update player parameters
+    if (this.player) {
+      this.player.baseSpeed = this.charConfig.speed;
+      this.player.maxHp = this.charConfig.maxHp;
+      this.player.hp = Math.min(this.player.hp, this.charConfig.maxHp);
+      this.player.bulletDamage = this.charConfig.bulletDamage;
+      this.player.attackRate = this.charConfig.attackRate;
+      this.player.s1MaxCd = this.charConfig.skill1.cd;
+      this.player.s2MaxCd = this.charConfig.skill2.cd;
+    }
+
+    // Rebuild 3D Model with new hero visual
+    this.buildPlayer3D();
+    this.audio.playVictory();
   }
 
   setupTouchJoystick() {
@@ -324,7 +308,7 @@ export default class ZapPets3DGame extends BaseGame {
           const dx = touch.clientX - startX;
           const dy = touch.clientY - startY;
           const dist = Math.hypot(dx, dy);
-          const maxDist = 45;
+          const maxDist = 40;
           const angle = Math.atan2(dy, dx);
           const clampedDist = Math.min(dist, maxDist);
 
@@ -357,21 +341,20 @@ export default class ZapPets3DGame extends BaseGame {
     this.addTrackedEventListener(window, 'touchend', onTouchEnd, { passive: true });
   }
 
-  init3DScene() {
-    const width = this.webglContainer.clientWidth || 800;
-    const height = this.webglContainer.clientHeight || 560;
-
+  init3DScene(width, height) {
     // 1. Scene
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x070913);
+    this.scene.background = new THREE.Color(0x0a0d1a);
 
     // 2. Camera (Isometric Top-Down 3D Perspective)
     this.camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 1000);
+    this.camera.position.set(0, 24, 18);
+    this.camera.lookAt(0, 0.5, 0);
 
     // 3. Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -379,28 +362,22 @@ export default class ZapPets3DGame extends BaseGame {
     this.webglContainer.appendChild(this.renderer.domElement);
 
     // 4. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
     this.scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(40, 60, 30);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    dirLight.position.set(30, 50, 25);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 1024;
     dirLight.shadow.mapSize.height = 1024;
-    dirLight.shadow.camera.near = 10;
-    dirLight.shadow.camera.far = 150;
-    dirLight.shadow.camera.left = -50;
-    dirLight.shadow.camera.right = 50;
-    dirLight.shadow.camera.top = 50;
-    dirLight.shadow.camera.bottom = -50;
     this.scene.add(dirLight);
 
-    // 5. Build 3D Arena Floor
-    this.arenaSize = 160; // 160x160 3D world units
+    // 5. Arena Floor
+    this.arenaSize = 160;
     const floorGeo = new THREE.PlaneGeometry(this.arenaSize, this.arenaSize);
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x0f172a,
-      roughness: 0.8,
+      roughness: 0.7,
       metalness: 0.2
     });
     this.floor = new THREE.Mesh(floorGeo, floorMat);
@@ -408,23 +385,16 @@ export default class ZapPets3DGame extends BaseGame {
     this.floor.receiveShadow = true;
     this.scene.add(this.floor);
 
-    // Grid Overlay on floor
+    // Grid Overlay
     const grid = new THREE.GridHelper(this.arenaSize, 40, 0x06b6d4, 0x1e293b);
     grid.position.y = 0.05;
     this.scene.add(grid);
 
-    // Arena Perimeter Laser Fence (4 pillars & fences)
+    // Perimeter walls
     this.buildArenaFences();
 
-    // 6. Build 3D Player Model
+    // 6. Build Player Model
     this.buildPlayer3D();
-
-    // 7. Update Skills HUD
-    this.heroTag.textContent = `${this.charConfig.icon} ${this.charConfig.name}`;
-    this.heroTag.style.borderColor = this.charConfig.color;
-    this.heroTag.style.color = this.charConfig.color;
-    this.s1Icon.textContent = this.charConfig.skill1.icon;
-    this.s2Icon.textContent = this.charConfig.skill2.icon;
   }
 
   buildArenaFences() {
@@ -451,24 +421,44 @@ export default class ZapPets3DGame extends BaseGame {
   }
 
   buildPlayer3D() {
-    this.playerGroup = new THREE.Group();
+    if (this.playerGroup) {
+      this.scene.remove(this.playerGroup);
+      this.playerGroup.traverse(o => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
+      });
+    }
 
+    this.playerGroup = new THREE.Group();
     const char = this.charConfig;
 
-    // Body (Low-poly box)
+    // Body
     const bodyGeo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
     const bodyMat = new THREE.MeshStandardMaterial({
       color: char.bodyColor,
-      roughness: 0.4,
+      roughness: 0.35,
       metalness: 0.1,
       flatShading: true
     });
+
+    // Auto-load PixAssets custom pixel-art texture (games/zap-pets/assets/{char.id}.png)
+    if (THREE.TextureLoader) {
+      const loader = new THREE.TextureLoader();
+      loader.load(`games/zap-pets/assets/${char.id}.png`, (tex) => {
+        tex.magFilter = THREE.NearestFilter;
+        tex.minFilter = THREE.NearestFilter;
+        if (THREE.SRGBColorSpace) tex.colorSpace = THREE.SRGBColorSpace;
+        bodyMat.map = tex;
+        bodyMat.needsUpdate = true;
+      });
+    }
+
     this.playerBody = new THREE.Mesh(bodyGeo, bodyMat);
     this.playerBody.position.y = 1.0;
     this.playerBody.castShadow = true;
     this.playerGroup.add(this.playerBody);
 
-    // Head / Face
+    // Eyes
     const eyeGeo = new THREE.BoxGeometry(0.3, 0.3, 0.1);
     const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
     const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
@@ -479,10 +469,10 @@ export default class ZapPets3DGame extends BaseGame {
     eyeR.position.set(0.4, 1.2, 0.82);
     this.playerGroup.add(eyeR);
 
-    // Ears based on character type
+    // Ears
     if (char.id === 'fox') {
       const earGeo = new THREE.ConeGeometry(0.4, 0.9, 4);
-      const earMat = new THREE.MeshStandardMaterial({ color: 0xca8a04, flatShading: true });
+      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor, flatShading: true });
       const earL = new THREE.Mesh(earGeo, earMat);
       earL.position.set(-0.6, 2.0, 0.1);
       earL.rotation.z = 0.2;
@@ -494,7 +484,7 @@ export default class ZapPets3DGame extends BaseGame {
       this.playerGroup.add(earR);
     } else if (char.id === 'bear') {
       const earGeo = new THREE.SphereGeometry(0.35, 6, 6);
-      const earMat = new THREE.MeshStandardMaterial({ color: 0x0369a1, flatShading: true });
+      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor, flatShading: true });
       const earL = new THREE.Mesh(earGeo, earMat);
       earL.position.set(-0.7, 1.8, 0);
       this.playerGroup.add(earL);
@@ -504,7 +494,7 @@ export default class ZapPets3DGame extends BaseGame {
       this.playerGroup.add(earR);
     } else if (char.id === 'bunny') {
       const earGeo = new THREE.BoxGeometry(0.25, 1.4, 0.25);
-      const earMat = new THREE.MeshStandardMaterial({ color: 0xa855f7, flatShading: true });
+      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor, flatShading: true });
       const earL = new THREE.Mesh(earGeo, earMat);
       earL.position.set(-0.4, 2.2, 0);
       earL.rotation.z = 0.1;
@@ -516,7 +506,11 @@ export default class ZapPets3DGame extends BaseGame {
       this.playerGroup.add(earR);
     }
 
-    this.playerGroup.position.set(0, 0, 0);
+    if (this.player) {
+      this.playerGroup.position.set(this.player.x, 0, this.player.z);
+    } else {
+      this.playerGroup.position.set(0, 0, 0);
+    }
     this.scene.add(this.playerGroup);
   }
 
@@ -560,7 +554,7 @@ export default class ZapPets3DGame extends BaseGame {
       critChance: 0.12,
       orbitingOrbs: 0,
       speedMultiplier: 1.0,
-      magnetRadius: 12
+      magnetRadius: 14
     };
 
     // Waves
@@ -579,6 +573,10 @@ export default class ZapPets3DGame extends BaseGame {
 
     this.currentBoss = null;
 
+    if (this.playerGroup) {
+      this.playerGroup.position.set(0, 0, 0);
+    }
+
     this.updateHUD();
     this.startLoop();
   }
@@ -591,34 +589,30 @@ export default class ZapPets3DGame extends BaseGame {
     const char = this.charConfig;
 
     if (char.id === 'fox') {
-      // Lightning Dash
       this.player.isDashing = true;
       this.player.dashDuration = 0.35;
       this.player.invulnerableTimer = 0.4;
       this.audio.playJump();
       this.spawn3DShockTrail();
     } else if (char.id === 'bear') {
-      // Ground Slam
       this.audio.playExplosion();
       const slamRadius = 14;
       this.enemies.forEach(e => {
         const d = Math.hypot(e.x - this.player.x, e.z - this.player.z);
         if (d <= slamRadius) {
           e.hp -= 60;
-          e.speed = Math.max(2, e.speed * 0.4); // Stun / slow
+          e.speed = Math.max(2, e.speed * 0.4);
           if (e.hp <= 0 && !e.dead) this.handleEnemyDefeated(e);
         }
       });
       this.spawnShockwaveEffect(slamRadius, 0x0284c7);
     } else if (char.id === 'bunny') {
-      // Frost Blink
       const blinkDist = 12;
       this.player.x += Math.sin(this.player.facingAngle) * blinkDist;
       this.player.z += Math.cos(this.player.facingAngle) * blinkDist;
       this.clampPlayerPosition();
       this.audio.playJump();
 
-      // Freeze trap at old pos
       const freezeRadius = 10;
       this.enemies.forEach(e => {
         const d = Math.hypot(e.x - this.player.x, e.z - this.player.z);
@@ -639,7 +633,6 @@ export default class ZapPets3DGame extends BaseGame {
     const char = this.charConfig;
 
     if (char.id === 'fox') {
-      // Thunder Nova
       this.audio.playExplosion();
       const novaRadius = 18;
       this.enemies.forEach(e => {
@@ -654,19 +647,17 @@ export default class ZapPets3DGame extends BaseGame {
       });
       this.spawnShockwaveEffect(novaRadius, 0xfbbf24);
     } else if (char.id === 'bear') {
-      // Iron Fortress Shield
       this.player.shieldActive = true;
       this.player.shieldDuration = 3.5;
       this.audio.playVictory();
     } else if (char.id === 'bunny') {
-      // Blizzard Storm
       this.audio.playExplosion();
       const stormRadius = 22;
       this.enemies.forEach(e => {
         const d = Math.hypot(e.x - this.player.x, e.z - this.player.z);
         if (d <= stormRadius) {
           e.hp -= 80;
-          e.speed = Math.max(1, e.speed * 0.3); // 70% slow
+          e.speed = Math.max(1, e.speed * 0.3);
           if (e.hp <= 0 && !e.dead) this.handleEnemyDefeated(e);
         }
       });
@@ -791,14 +782,12 @@ export default class ZapPets3DGame extends BaseGame {
     enemy.dead = true;
     this.emitScore(this.score + enemy.points);
 
-    // Remove 3D Mesh
     if (enemy.mesh) {
       this.scene.remove(enemy.mesh);
       enemy.mesh.geometry.dispose();
       enemy.mesh.material.dispose();
     }
 
-    // 3D Voxel shatter particles
     for (let i = 0; i < 6; i++) {
       const pGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
       const pMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
@@ -817,7 +806,6 @@ export default class ZapPets3DGame extends BaseGame {
       });
     }
 
-    // Drop Item (Gem/Coin)
     const gemGeo = new THREE.OctahedronGeometry(0.45, 0);
     const gemMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
     const gemMesh = new THREE.Mesh(gemGeo, gemMat);
@@ -855,8 +843,8 @@ export default class ZapPets3DGame extends BaseGame {
         background: linear-gradient(145deg, #1e1b4b, #0f172a);
         border: 2px solid rgba(56,189,248,0.4);
         border-radius: 14px;
-        padding: 18px 16px;
-        width: 190px;
+        padding: 16px 14px;
+        width: 180px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -866,8 +854,8 @@ export default class ZapPets3DGame extends BaseGame {
         box-shadow: 0 8px 20px rgba(0,0,0,0.5);
       `;
       card.innerHTML = `
-        <div style="font-size:2.2rem; margin-bottom:8px;">${perk.icon}</div>
-        <div style="font-family:var(--font-display); font-weight:800; font-size:1rem; color:#f8fafc; margin-bottom:6px;">${perk.title}</div>
+        <div style="font-size:2rem; margin-bottom:6px;">${perk.icon}</div>
+        <div style="font-family:var(--font-display); font-weight:800; font-size:0.95rem; color:#f8fafc; margin-bottom:4px;">${perk.title}</div>
         <div style="font-size:0.75rem; color:#94a3b8; line-height:1.4;">${perk.desc}</div>
       `;
 
@@ -937,7 +925,7 @@ export default class ZapPets3DGame extends BaseGame {
   }
 
   update(dt) {
-    if (!this.playerGroup) return;
+    if (!this.playerGroup || !this.player) return;
 
     // Cooldown timers
     if (this.player.s1Cd > 0) this.player.s1Cd = Math.max(0, this.player.s1Cd - dt);
@@ -1007,7 +995,6 @@ export default class ZapPets3DGame extends BaseGame {
         const oz = this.player.z + Math.cos(a) * orbDist;
         mesh.position.set(ox, 1.2, oz);
 
-        // Collision with enemies
         this.enemies.forEach(e => {
           if (Math.hypot(e.x - ox, e.z - oz) <= e.radius + 0.6) {
             e.hp -= 40 * dt;
@@ -1090,7 +1077,6 @@ export default class ZapPets3DGame extends BaseGame {
         e.mesh.rotation.y = Math.atan2(nx, nz);
       }
 
-      // Damage player on contact
       if (dist <= this.player.radius + e.radius) {
         if (this.player.invulnerableTimer <= 0) {
           let dmg = e.type === 'boss' ? 30 : 12;
@@ -1141,11 +1127,11 @@ export default class ZapPets3DGame extends BaseGame {
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dt;
-      if (p.mesh.material.opacity) {
+      if (p.mesh && p.mesh.material && p.mesh.material.opacity) {
         p.mesh.material.opacity = Math.max(0, p.life / p.maxLife);
       }
       if (p.vy) {
-        p.vy -= 18 * dt; // gravity
+        p.vy -= 18 * dt;
         p.mesh.position.y += p.vy * dt;
         p.mesh.position.x += p.vx * dt;
         p.mesh.position.z += p.vz * dt;
@@ -1220,40 +1206,84 @@ export default class ZapPets3DGame extends BaseGame {
   }
 
   renderMinimap() {
-    this.minimapCtx.clearRect(0, 0, 80, 80);
-    const scale = 80 / this.arenaSize;
-    const offset = 40;
+    this.minimapCtx.clearRect(0, 0, 75, 75);
+    const scale = 75 / this.arenaSize;
+    const offset = 37.5;
 
-    // Arena boundary
     this.minimapCtx.strokeStyle = 'rgba(255,255,255,0.2)';
-    this.minimapCtx.strokeRect(0, 0, 80, 80);
+    this.minimapCtx.strokeRect(0, 0, 75, 75);
 
-    // Enemies (Red dots)
     this.minimapCtx.fillStyle = '#ef4444';
     this.enemies.forEach(e => {
       this.minimapCtx.fillRect(offset + e.x * scale - 1, offset + e.z * scale - 1, e.type === 'boss' ? 4 : 2, e.type === 'boss' ? 4 : 2);
     });
 
-    // Player (Yellow dot)
     this.minimapCtx.fillStyle = '#eab308';
     this.minimapCtx.beginPath();
     this.minimapCtx.arc(offset + this.player.x * scale, offset + this.player.z * scale, 2.5, 0, Math.PI * 2);
     this.minimapCtx.fill();
   }
 
+  updateHUD() {
+    if (this.levelBadge && this.player) this.levelBadge.textContent = `LV ${this.player.level}`;
+    if (this.coinsText && this.player) this.coinsText.textContent = `🪙 ${this.player.coins}`;
+    if (this.waveNumEl) this.waveNumEl.textContent = this.wave;
+    if (this.waveTimerEl) this.waveTimerEl.textContent = Math.ceil(this.waveTimeLeft);
+
+    if (this.player) {
+      const expPercent = Math.min(100, (this.player.xp / this.player.xpNeeded) * 100);
+      if (this.expFill) this.expFill.style.width = `${expPercent}%`;
+
+      if (this.s1CdEl) {
+        if (this.player.s1Cd > 0) {
+          this.s1CdEl.style.display = 'flex';
+          this.s1CdEl.textContent = this.player.s1Cd.toFixed(1);
+        } else {
+          this.s1CdEl.style.display = 'none';
+        }
+      }
+
+      if (this.s2CdEl) {
+        if (this.player.s2Cd > 0) {
+          this.s2CdEl.style.display = 'flex';
+          this.s2CdEl.textContent = this.player.s2Cd.toFixed(1);
+        } else {
+          this.s2CdEl.style.display = 'none';
+        }
+      }
+    }
+
+    if (this.currentBoss && this.currentBoss.hp > 0) {
+      this.bossBar.style.display = 'flex';
+      const pct = Math.max(0, (this.currentBoss.hp / this.currentBoss.maxHp) * 100);
+      this.bossFill.style.width = `${pct}%`;
+    } else {
+      this.bossBar.style.display = 'none';
+    }
+  }
+
   handleResize() {
     if (!this.renderer || !this.camera || !this.webglContainer) return;
-    const width = this.webglContainer.clientWidth || 800;
-    const height = this.webglContainer.clientHeight || 560;
-    this.camera.aspect = width / height;
+    const rect = this.container.getBoundingClientRect();
+    const stageWidth = Math.max(340, Math.min(rect.width > 200 ? rect.width - 20 : 880, 960));
+    const stageHeight = Math.max(380, Math.min(rect.height > 200 ? rect.height - 30 : 580, 620));
+
+    const wrapper = this.container.querySelector('.zappets-wrapper');
+    if (wrapper) {
+      wrapper.style.width = `${stageWidth}px`;
+      wrapper.style.height = `${stageHeight}px`;
+    }
+    this.webglContainer.style.width = `${stageWidth}px`;
+    this.webglContainer.style.height = `${stageHeight}px`;
+
+    this.camera.aspect = stageWidth / stageHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(stageWidth, stageHeight);
   }
 
   destroy() {
     super.destroy();
 
-    // Clean up Three.js 3D WebGL resources
     if (this.renderer) {
       this.renderer.dispose();
       this.renderer.forceContextLoss();
