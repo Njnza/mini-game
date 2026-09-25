@@ -55,7 +55,9 @@ export async function runEndpointsTests() {
     '/games/brick-breaker/meta.js',
     '/games/brick-breaker/game.js',
     '/games/memory-matrix/meta.js',
-    '/games/memory-matrix/game.js'
+    '/games/memory-matrix/game.js',
+    '/games/zap-pets/meta.js',
+    '/games/zap-pets/game.js'
   ];
 
   try {

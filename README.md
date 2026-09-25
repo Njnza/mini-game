@@ -102,7 +102,10 @@ mini-game/
     ├── brick-breaker/          # Game 4: Cyber Breaker (Arkanoid / Multiball)
     │   ├── meta.js
     │   └── game.js
-    └── memory-matrix/          # Game 5: Memory Matrix (3D Card Flip Puzzle)
+    ├── memory-matrix/          # Game 5: Memory Matrix (3D Card Flip Puzzle)
+    │   ├── meta.js
+    │   └── game.js
+    └── zap-pets/               # Game 6: Zap Pets: Arena (Open-World Roguelite Survival)
         ├── meta.js
         └── game.js
 ```
