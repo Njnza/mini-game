@@ -1,0 +1,15 @@
+{
+  "name": "mini-game-hub",
+  "version": "1.0.0",
+  "description": "Multi Mini-Games Portal & Modular Game Engine Architecture",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node tests/run-all-tests.js"
+  },
+  "keywords": ["game", "mini-games", "arcade", "canvas", "modular-architecture"],
+  "author": "",
+  "license": "MIT"
+}

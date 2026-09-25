@@ -1,20 +1,127 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Game Nhấp Chuột Bắt Điểm</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Neo Arcade - Ultimate Mini-Games Hub</title>
+  <meta name="description" content="Curated collection of high-performance 60FPS mini-games with sleek modern cyberpunk aesthetics." />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
 </head>
 <body>
-  <div class="game-container">
-    <h1>Bắt Mục Tiêu</h1>
-    <p>Điểm số: <span id="score">0</span> | Thời gian: <span id="time">30</span>s</p>
-    <div id="play-area">
-      <div id="target"></div>
-    </div>
-    <button id="start-btn">Bắt đầu</button>
+
+  <!-- ==========================================
+       VIEW 1: GAME HUB (PORTAL)
+       ========================================== -->
+  <div id="hub-view" class="view-container active">
+    <!-- Header -->
+    <header class="hub-header">
+      <div class="hub-brand">
+        <span class="brand-logo-icon">🕹️</span>
+        <span class="brand-name">NEO ARCADE</span>
+        <span class="brand-badge">MODULAR V1.0</span>
+      </div>
+      <div class="hub-actions">
+        <button id="btn-hub-audio-toggle" class="btn-icon">🔊 Sound</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="hub-main">
+      <section class="hub-hero">
+        <h1 class="hero-title">MINI-GAME <span class="gradient-text">ARENA</span></h1>
+        <p class="hero-desc">A curated collection of reflex, puzzle, and high-performance 60FPS arcade games. Challenge your skills and break all high scores!</p>
+
+        <!-- Search & Filter Toolbar -->
+        <div class="hub-toolbar">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Search your favorite mini-game..." autocomplete="off" />
+          </div>
+          <div id="category-filters" class="filter-pills">
+            <!-- Filter pills dynamically rendered from JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Game Cards Grid -->
+      <section id="games-grid" class="games-grid">
+        <!-- Rendered dynamically via GameRegistry -->
+      </section>
+    </main>
+
+    <footer class="hub-footer">
+      <p>© 2026 Neo Arcade Hub • Modular Game Engine Architecture • 60FPS Web Audio</p>
+    </footer>
   </div>
-  <script src="script.js"></script>
+
+  <!-- ==========================================
+       VIEW 2: GAME STAGE
+       ========================================== -->
+  <div id="game-view" class="view-container">
+    <!-- Top Controller Bar -->
+    <nav class="game-topbar">
+      <div class="game-topbar-left">
+        <button id="btn-back-hub" class="btn-icon btn-back">
+          <span>←</span> Back to Hub
+        </button>
+        <h2 id="active-game-title" style="font-family:var(--font-display); font-size:1.1rem; font-weight:700;">Game Title</h2>
+      </div>
+
+      <div class="game-topbar-center">
+        <div class="stat-chip">
+          <span class="stat-label">Score</span>
+          <span id="active-game-score" class="stat-val">0</span>
+        </div>
+        <div class="stat-chip">
+          <span class="stat-label">Best</span>
+          <span id="active-game-highscore" class="stat-val" style="color:var(--neon-amber);">0</span>
+        </div>
+      </div>
+
+      <div class="game-topbar-right">
+        <button id="btn-pause-game" class="btn-icon">⏸ Pause</button>
+        <button id="btn-restart-game" class="btn-icon">🔄 Restart</button>
+        <button id="btn-audio-toggle" class="btn-icon" title="Toggle Sound">🔊</button>
+        <button id="btn-fullscreen" class="btn-icon" title="Toggle Fullscreen">⛶</button>
+      </div>
+    </nav>
+
+    <!-- Game Rendering Canvas/DOM Container -->
+    <div class="game-stage-wrapper">
+      <div id="game-container">
+        <!-- Current game's Canvas/DOM mounts here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL: GAME OVER
+       ========================================== -->
+  <div id="game-over-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div id="modal-new-record" class="modal-badge-record">🎉 NEW HIGH SCORE RECORD! 🎉</div>
+      <h2 class="modal-title">GAME OVER</h2>
+      
+      <div class="modal-stats-box">
+        <div class="modal-stat-item">
+          <div class="lbl">Final Score</div>
+          <div id="modal-final-score" class="val val-current">0</div>
+        </div>
+        <div class="modal-stat-item">
+          <div class="lbl">All-Time Best</div>
+          <div id="modal-high-score" class="val val-best">0</div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="modal-btn-restart" class="btn-primary-action">🔄 Play Again</button>
+        <button id="modal-btn-hub" class="btn-secondary-action">🏠 Back to Hub</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Bootstrap Entry Point -->
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>
