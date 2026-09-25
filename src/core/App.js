@@ -287,13 +287,14 @@ export class App {
   }
 
   handleGameOver(finalScore) {
+    const scoreVal = typeof finalScore === 'object' && finalScore !== null ? (finalScore.score || 0) : (Number(finalScore) || 0);
     const gameId = this.currentGameMeta.id;
-    const saveResult = StorageManager.saveHighScore(gameId, finalScore);
+    const saveResult = StorageManager.saveHighScore(gameId, scoreVal);
 
-    this.modalFinalScore.textContent = finalScore.toLocaleString();
+    this.modalFinalScore.textContent = scoreVal.toLocaleString();
     this.modalHighScore.textContent = saveResult.current.toLocaleString();
 
-    if (saveResult.isNewRecord && finalScore > 0) {
+    if (saveResult.isNewRecord && scoreVal > 0) {
       this.modalNewRecordBadge.style.display = 'inline-block';
       this.audio.playVictory();
     } else {

@@ -102,8 +102,10 @@ export default class ZapPets3DGame extends BaseGame {
 
     // Calculate reliable dimensions
     const rect = this.container.getBoundingClientRect();
-    const stageWidth = Math.max(340, Math.min(rect.width > 200 ? rect.width - 20 : 880, 960));
-    const stageHeight = Math.max(380, Math.min(rect.height > 200 ? rect.height - 30 : 580, 620));
+    this.stageWidth = Math.max(340, Math.min(rect.width > 200 ? rect.width - 20 : 880, 960));
+    this.stageHeight = Math.max(380, Math.min(rect.height > 200 ? rect.height - 30 : 580, 620));
+    const stageWidth = this.stageWidth;
+    const stageHeight = this.stageHeight;
 
     this.container.innerHTML = `
       <div class="zappets-wrapper" style="position:relative; width:${stageWidth}px; height:${stageHeight}px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; user-select:none; border-radius:16px; box-shadow:0 14px 40px rgba(0,0,0,0.6); background:#cfe69f;">
@@ -299,6 +301,10 @@ export default class ZapPets3DGame extends BaseGame {
     this.s1Icon.textContent = this.charConfig.skill1.icon;
     this.s2Icon.textContent = this.charConfig.skill2.icon;
 
+    if (this.sharedBoltMat) {
+      this.sharedBoltMat.color.set(this.charConfig.bulletColor);
+    }
+
     if (this.player) {
       this.player.baseSpeed = this.charConfig.speed;
       this.player.maxHp = this.charConfig.maxHp;
@@ -404,26 +410,28 @@ export default class ZapPets3DGame extends BaseGame {
     this.scene.add(ambientLight);
 
     // Directional Sun Light angled to cast distinct diagonal cartoon shadows
-    const sunLight = new THREE.DirectionalLight(0xfffcf0, 1.45);
-    sunLight.position.set(30, 52, -26);
-    sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 2048;
-    sunLight.shadow.mapSize.height = 2048;
-    sunLight.shadow.camera.near = 10;
-    sunLight.shadow.camera.far = 130;
-    sunLight.shadow.camera.left = -50;
-    sunLight.shadow.camera.right = 50;
-    sunLight.shadow.camera.top = 50;
-    sunLight.shadow.camera.bottom = -50;
-    sunLight.shadow.bias = -0.0004;
-    this.scene.add(sunLight);
+    this.sunLight = new THREE.DirectionalLight(0xfffcf0, 1.45);
+    this.sunLight.position.set(30, 52, -26);
+    this.sunLight.castShadow = true;
+    this.sunLight.shadow.mapSize.width = 1024;
+    this.sunLight.shadow.mapSize.height = 1024;
+    this.sunLight.shadow.camera.near = 10;
+    this.sunLight.shadow.camera.far = 130;
+    this.sunLight.shadow.camera.left = -50;
+    this.sunLight.shadow.camera.right = 50;
+    this.sunLight.shadow.camera.top = 50;
+    this.sunLight.shadow.camera.bottom = -50;
+    this.sunLight.shadow.bias = -0.0004;
+    this.scene.add(this.sunLight);
+    this.scene.add(this.sunLight.target);
 
     // 5. Build Graveyard Garden Map
     this.arenaSize = 160;
     this.buildGraveyardMap();
 
-    // 6. Preload Ghost Face Texture
+    // 6. Preload Ghost Face Texture & Shared Pooled Resources
     this.ghostFaceTexture = this.createGhostFaceTexture();
+    this.initSharedResources();
 
     // 7. Build Player Model
     this.buildPlayer3D();
@@ -481,6 +489,35 @@ export default class ZapPets3DGame extends BaseGame {
 
     const tex = new THREE.CanvasTexture(canvas);
     return tex;
+  }
+
+  initSharedResources() {
+    this.sharedBoltGeo = new THREE.SphereGeometry(0.35, 8, 8);
+    this.sharedBoltMat = new THREE.MeshBasicMaterial({ color: this.charConfig.bulletColor });
+
+    this.sharedGhostGeo = new THREE.CapsuleGeometry(0.75, 0.8, 8, 12);
+    this.sharedGhostMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    this.sharedBossMat = new THREE.MeshLambertMaterial({ color: 0xffe4e6 });
+
+    this.sharedGhostFaceGeo = new THREE.PlaneGeometry(0.9, 0.9);
+    this.sharedGhostFaceMat = new THREE.MeshBasicMaterial({
+      map: this.ghostFaceTexture,
+      transparent: true
+    });
+
+    this.sharedGhostArmGeo = new THREE.SphereGeometry(0.22, 8, 8);
+    this.sharedGhostShadowGeo = new THREE.CircleGeometry(0.7, 16);
+    this.sharedGhostShadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.25
+    });
+
+    this.sharedGemGeo = new THREE.OctahedronGeometry(0.42, 0);
+    this.sharedGemMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+
+    this.sharedParticleGeo = new THREE.OctahedronGeometry(0.32, 0);
+    this.sharedParticleMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
   }
 
   buildGraveyardMap() {
@@ -966,10 +1003,7 @@ export default class ZapPets3DGame extends BaseGame {
 
   spawn3DShockTrail() {
     for (let i = 0; i < 8; i++) {
-      const g = new THREE.Mesh(
-        new THREE.SphereGeometry(0.35, 6, 6),
-        new THREE.MeshBasicMaterial({ color: 0xfde047 })
-      );
+      const g = new THREE.Mesh(this.sharedBoltGeo, this.sharedParticleMat);
       g.position.set(
         this.player.x + (Math.random() - 0.5) * 2,
         0.5,
@@ -1055,45 +1089,34 @@ export default class ZapPets3DGame extends BaseGame {
     const ghostScale = isBoss ? 2.8 : (isTank ? 1.4 : (isFast ? 0.85 : 1.05));
 
     // Dome / Capsule Body (Smooth cartoon white)
-    const capGeo = new THREE.CapsuleGeometry(0.75 * ghostScale, 0.8 * ghostScale, 8, 16);
-    const capMat = new THREE.MeshLambertMaterial({
-      color: isBoss ? 0xffe4e6 : 0xffffff
-    });
-    const ghostBody = new THREE.Mesh(capGeo, capMat);
+    const ghostBody = new THREE.Mesh(this.sharedGhostGeo, isBoss ? this.sharedBossMat : this.sharedGhostMat);
     ghostBody.position.y = 1.0 * ghostScale;
+    ghostBody.scale.set(ghostScale, ghostScale, ghostScale);
     ghostBody.castShadow = true;
     ghostGroup.add(ghostBody);
 
     // Cute Ghost Face Plane
-    const faceGeo = new THREE.PlaneGeometry(0.9 * ghostScale, 0.9 * ghostScale);
-    const faceMat = new THREE.MeshBasicMaterial({
-      map: this.ghostFaceTexture,
-      transparent: true
-    });
-    const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+    const faceMesh = new THREE.Mesh(this.sharedGhostFaceGeo, this.sharedGhostFaceMat);
     faceMesh.position.set(0, 1.05 * ghostScale, 0.78 * ghostScale);
+    faceMesh.scale.set(ghostScale, ghostScale, 1);
     ghostGroup.add(faceMesh);
 
     // Two Cute Forward Ghost Arms
-    const handGeo = new THREE.SphereGeometry(0.22 * ghostScale, 8, 8);
-    const handL = new THREE.Mesh(handGeo, capMat);
+    const handL = new THREE.Mesh(this.sharedGhostArmGeo, isBoss ? this.sharedBossMat : this.sharedGhostMat);
     handL.position.set(-0.65 * ghostScale, 0.8 * ghostScale, 0.35 * ghostScale);
+    handL.scale.set(ghostScale, ghostScale, ghostScale);
     ghostGroup.add(handL);
 
-    const handR = new THREE.Mesh(handGeo, capMat);
+    const handR = new THREE.Mesh(this.sharedGhostArmGeo, isBoss ? this.sharedBossMat : this.sharedGhostMat);
     handR.position.set(0.65 * ghostScale, 0.8 * ghostScale, 0.35 * ghostScale);
+    handR.scale.set(ghostScale, ghostScale, ghostScale);
     ghostGroup.add(handR);
 
     // Cute Soft Ground Drop Shadow
-    const shadowGeo = new THREE.CircleGeometry(0.7 * ghostScale, 16);
-    const shadowMat = new THREE.MeshBasicMaterial({
-      color: 0x000000,
-      transparent: true,
-      opacity: 0.25
-    });
-    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    const shadowMesh = new THREE.Mesh(this.sharedGhostShadowGeo, this.sharedGhostShadowMat);
     shadowMesh.rotation.x = -Math.PI / 2;
     shadowMesh.position.y = 0.04;
+    shadowMesh.scale.set(ghostScale, ghostScale, 1);
     ghostGroup.add(shadowMesh);
 
     ghostGroup.position.set(ex, 0, ez);
@@ -1120,17 +1143,11 @@ export default class ZapPets3DGame extends BaseGame {
     // Remove 3D Mesh
     if (enemy.mesh) {
       this.scene.remove(enemy.mesh);
-      enemy.mesh.traverse(o => {
-        if (o.geometry) o.geometry.dispose();
-        if (o.material) o.material.dispose();
-      });
     }
 
     // Cute Cartoon Pop Effect (Golden stars & white puff)
     for (let i = 0; i < 6; i++) {
-      const pGeo = new THREE.OctahedronGeometry(0.35, 0);
-      const pMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
-      const pMesh = new THREE.Mesh(pGeo, pMat);
+      const pMesh = new THREE.Mesh(this.sharedParticleGeo, this.sharedParticleMat);
       pMesh.position.set(enemy.x, 1.2, enemy.z);
       this.scene.add(pMesh);
 
@@ -1147,9 +1164,7 @@ export default class ZapPets3DGame extends BaseGame {
     }
 
     // Drop Glowing Star Gem
-    const gemGeo = new THREE.OctahedronGeometry(0.42, 0);
-    const gemMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
-    const gemMesh = new THREE.Mesh(gemGeo, gemMat);
+    const gemMesh = new THREE.Mesh(this.sharedGemGeo, this.sharedGemMat);
     gemMesh.position.set(enemy.x, 0.45, enemy.z);
     this.scene.add(gemMesh);
 
@@ -1236,7 +1251,10 @@ export default class ZapPets3DGame extends BaseGame {
         card.style.borderColor = 'rgba(253,224,71,0.5)';
       };
 
+      let selected = false;
       const selectPerk = (e) => {
+        if (selected) return;
+        selected = true;
         if (e) {
           e.preventDefault();
           e.stopPropagation();
@@ -1247,7 +1265,6 @@ export default class ZapPets3DGame extends BaseGame {
         this.audio.playPowerup();
       };
 
-      card.addEventListener('pointerdown', selectPerk);
       card.addEventListener('click', selectPerk);
 
       this.cardsContainer.appendChild(card);
@@ -1291,7 +1308,7 @@ export default class ZapPets3DGame extends BaseGame {
   }
 
   update(dt) {
-    if (!this.playerGroup || !this.player) return;
+    if (!this.playerGroup || !this.player || !this.isRunning || this.isGameOver) return;
     this.time += dt;
 
     // Cooldown timers
@@ -1342,12 +1359,24 @@ export default class ZapPets3DGame extends BaseGame {
       this.playerGroup.position.set(this.player.x, 0, this.player.z);
     }
 
+    // Defensive check against NaN coordinates
+    if (!Number.isFinite(this.player.x)) this.player.x = 0;
+    if (!Number.isFinite(this.player.z)) this.player.z = 0;
+
     // 2. Camera Smooth Follow (Isometric)
     const targetCamX = this.player.x;
     const targetCamZ = this.player.z + 26;
     this.camera.position.x += (targetCamX - this.camera.position.x) * 0.1;
     this.camera.position.z += (targetCamZ - this.camera.position.z) * 0.1;
     this.camera.lookAt(this.player.x, 0, this.player.z);
+
+    // Keep sunlight tracking player position for smooth, persistent shadows
+    if (this.sunLight) {
+      this.sunLight.position.set(this.player.x + 28, 48, this.player.z - 24);
+      if (this.sunLight.target) {
+        this.sunLight.target.position.set(this.player.x, 0, this.player.z);
+      }
+    }
 
     // 3. Orbiting Orbs
     if (this.orbitingMeshList.length > 0) {
@@ -1413,20 +1442,19 @@ export default class ZapPets3DGame extends BaseGame {
 
       if (hit || p.dist >= p.maxRange) {
         this.scene.remove(p.mesh);
-        p.mesh.geometry.dispose();
-        p.mesh.material.dispose();
         this.projectiles.splice(i, 1);
       }
     }
 
     // 6. Update Ghosts
-    this.enemies.forEach(e => {
-      if (e.dead) return;
+    for (let i = 0; i < this.enemies.length; i++) {
+      const e = this.enemies[i];
+      if (e.dead) continue;
       const dx = this.player.x - e.x;
       const dz = this.player.z - e.z;
       const dist = Math.hypot(dx, dz);
 
-      if (dist > 0.1) {
+      if (dist > 0.05) {
         const nx = dx / dist;
         const nz = dz / dist;
         e.x += nx * e.speed * dt;
@@ -1456,12 +1484,13 @@ export default class ZapPets3DGame extends BaseGame {
 
           if (this.player.hp <= 0) {
             this.player.hp = 0;
+            this.updateHUD();
             this.emitGameOver();
             return;
           }
         }
       }
-    });
+    }
 
     // Clean up dead enemies from array
     this.enemies = this.enemies.filter(e => !e.dead);
@@ -1471,7 +1500,7 @@ export default class ZapPets3DGame extends BaseGame {
       const it = this.items[i];
       const d = Math.hypot(it.x - this.player.x, it.z - this.player.z);
 
-      if (d <= this.player.magnetRadius) {
+      if (d > 0.05 && d <= this.player.magnetRadius) {
         const pullSpd = 20 * dt;
         it.x += ((this.player.x - it.x) / d) * pullSpd;
         it.z += ((this.player.z - it.z) / d) * pullSpd;
@@ -1480,8 +1509,6 @@ export default class ZapPets3DGame extends BaseGame {
 
       if (d <= this.player.radius + 0.8) {
         this.scene.remove(it.mesh);
-        it.mesh.geometry.dispose();
-        it.mesh.material.dispose();
         this.items.splice(i, 1);
 
         this.player.xp += it.xp;
@@ -1511,8 +1538,6 @@ export default class ZapPets3DGame extends BaseGame {
 
       if (p.life <= 0) {
         this.scene.remove(p.mesh);
-        p.mesh.geometry.dispose();
-        p.mesh.material.dispose();
         this.particles.splice(i, 1);
       }
     }
@@ -1540,12 +1565,9 @@ export default class ZapPets3DGame extends BaseGame {
     const spread = 0.16;
     const startAngle = angle - ((count - 1) * spread) / 2;
 
-    const boltGeo = new THREE.SphereGeometry(0.38, 8, 8);
-    const boltMat = new THREE.MeshBasicMaterial({ color: this.charConfig.bulletColor });
-
     for (let i = 0; i < count; i++) {
       const bAngle = startAngle + i * spread;
-      const mesh = new THREE.Mesh(boltGeo, boltMat);
+      const mesh = new THREE.Mesh(this.sharedBoltGeo, this.sharedBoltMat);
       mesh.position.set(this.player.x, 1.1, this.player.z);
       this.scene.add(mesh);
 
@@ -1573,9 +1595,18 @@ export default class ZapPets3DGame extends BaseGame {
   updateHUD() {
     if (!this.player) return;
 
-    if (this.coinsText) this.coinsText.textContent = this.player.coins;
-    if (this.levelBadge) this.levelBadge.textContent = this.player.level;
-    if (this.waveNumEl) this.waveNumEl.textContent = this.wave;
+    if (this.coinsText && this.lastCoins !== this.player.coins) {
+      this.lastCoins = this.player.coins;
+      this.coinsText.textContent = this.player.coins;
+    }
+    if (this.levelBadge && this.lastLevel !== this.player.level) {
+      this.lastLevel = this.player.level;
+      this.levelBadge.textContent = this.player.level;
+    }
+    if (this.waveNumEl && this.lastWave !== this.wave) {
+      this.lastWave = this.wave;
+      this.waveNumEl.textContent = this.wave;
+    }
 
     if (this.waveProgressFill) {
       const pct = Math.min(100, (this.waveDefeated / this.waveTarget) * 100);
@@ -1587,20 +1618,25 @@ export default class ZapPets3DGame extends BaseGame {
 
     // 3D Floating Player HP Bar
     if (this.floatingHud && this.camera && this.renderer) {
+      this.camera.updateMatrixWorld();
       const pos = new THREE.Vector3(this.player.x, 2.4, this.player.z);
       pos.project(this.camera);
 
-      const width = this.webglContainer.clientWidth;
-      const height = this.webglContainer.clientHeight;
-      const sx = (pos.x * 0.5 + 0.5) * width;
-      const sy = (-(pos.y * 0.5) + 0.5) * height;
+      // Hide if behind camera
+      if (pos.z > 1.0) {
+        this.floatingHud.style.display = 'none';
+      } else {
+        this.floatingHud.style.display = 'flex';
+        const sx = (pos.x * 0.5 + 0.5) * this.stageWidth;
+        const sy = (-(pos.y * 0.5) + 0.5) * this.stageHeight;
 
-      this.floatingHud.style.left = `${sx}px`;
-      this.floatingHud.style.top = `${sy}px`;
+        this.floatingHud.style.left = `${sx}px`;
+        this.floatingHud.style.top = `${sy}px`;
 
-      const hpPercent = Math.max(0, (this.player.hp / this.player.maxHp) * 100);
-      this.floatingHpFill.style.width = `${hpPercent}%`;
-      this.floatingHpText.textContent = Math.ceil(this.player.hp);
+        const hpPercent = Math.max(0, (this.player.hp / this.player.maxHp) * 100);
+        this.floatingHpFill.style.width = `${hpPercent}%`;
+        this.floatingHpText.textContent = Math.ceil(this.player.hp);
+      }
     }
 
     // Skill cooldown overlays
@@ -1626,20 +1662,20 @@ export default class ZapPets3DGame extends BaseGame {
   handleResize() {
     if (!this.renderer || !this.camera || !this.webglContainer) return;
     const rect = this.container.getBoundingClientRect();
-    const stageWidth = Math.max(340, Math.min(rect.width > 200 ? rect.width - 20 : 880, 960));
-    const stageHeight = Math.max(380, Math.min(rect.height > 200 ? rect.height - 30 : 580, 620));
+    this.stageWidth = Math.max(340, Math.min(rect.width > 200 ? rect.width - 20 : 880, 960));
+    this.stageHeight = Math.max(380, Math.min(rect.height > 200 ? rect.height - 30 : 580, 620));
 
     const wrapper = this.container.querySelector('.zappets-wrapper');
     if (wrapper) {
-      wrapper.style.width = `${stageWidth}px`;
-      wrapper.style.height = `${stageHeight}px`;
+      wrapper.style.width = `${this.stageWidth}px`;
+      wrapper.style.height = `${this.stageHeight}px`;
     }
-    this.webglContainer.style.width = `${stageWidth}px`;
-    this.webglContainer.style.height = `${stageHeight}px`;
+    this.webglContainer.style.width = `${this.stageWidth}px`;
+    this.webglContainer.style.height = `${this.stageHeight}px`;
 
-    this.camera.aspect = stageWidth / stageHeight;
+    this.camera.aspect = this.stageWidth / this.stageHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(stageWidth, stageHeight);
+    this.renderer.setSize(this.stageWidth, this.stageHeight);
   }
 
   destroy() {
@@ -1653,6 +1689,21 @@ export default class ZapPets3DGame extends BaseGame {
       }
       this.renderer = null;
     }
+
+    if (this.sharedBoltGeo) this.sharedBoltGeo.dispose();
+    if (this.sharedBoltMat) this.sharedBoltMat.dispose();
+    if (this.sharedGhostGeo) this.sharedGhostGeo.dispose();
+    if (this.sharedGhostMat) this.sharedGhostMat.dispose();
+    if (this.sharedBossMat) this.sharedBossMat.dispose();
+    if (this.sharedGhostFaceGeo) this.sharedGhostFaceGeo.dispose();
+    if (this.sharedGhostFaceMat) this.sharedGhostFaceMat.dispose();
+    if (this.sharedGhostArmGeo) this.sharedGhostArmGeo.dispose();
+    if (this.sharedGhostShadowGeo) this.sharedGhostShadowGeo.dispose();
+    if (this.sharedGhostShadowMat) this.sharedGhostShadowMat.dispose();
+    if (this.sharedGemGeo) this.sharedGemGeo.dispose();
+    if (this.sharedGemMat) this.sharedGemMat.dispose();
+    if (this.sharedParticleGeo) this.sharedParticleGeo.dispose();
+    if (this.sharedParticleMat) this.sharedParticleMat.dispose();
 
     if (this.scene) {
       this.scene.traverse((obj) => {
@@ -1668,5 +1719,6 @@ export default class ZapPets3DGame extends BaseGame {
     this.camera = null;
     this.playerGroup = null;
     this.ghostFaceTexture = null;
+    this.sunLight = null;
   }
 }

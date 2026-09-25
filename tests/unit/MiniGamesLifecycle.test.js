@@ -85,12 +85,33 @@ export async function runMiniGamesLifecycleTests() {
     assert.doesNotThrow(() => game.resume(), `Game '${meta.id}' resume() must not throw`);
     assert.strictEqual(game.isPaused, false, `Game '${meta.id}' must be resumed`);
 
-    // 5. Test lethal damage / Game Over trigger
+    // 5. Test lethal damage / Game Over trigger & long distance movement
     if (meta.id === 'zap-pets') {
+      // Simulate multi-directional long distance travel
+      game.keys['w'] = true;
+      for (let f = 0; f < 50; f++) game.update(0.016);
+      delete game.keys['w'];
+
+      game.keys['d'] = true;
+      for (let f = 0; f < 50; f++) game.update(0.016);
+      delete game.keys['d'];
+
+      assert.strictEqual(Number.isFinite(game.player.x), true, 'Player X must remain a finite number');
+      assert.strictEqual(Number.isFinite(game.player.z), true, 'Player Z must remain a finite number');
+
+      // Test skills
+      assert.doesNotThrow(() => game.triggerSkill1(), 'Skill 1 trigger must not throw');
+      assert.doesNotThrow(() => game.triggerSkill2(), 'Skill 2 trigger must not throw');
+
+      // Test hero switcher
+      assert.doesNotThrow(() => game.switchHero('bear'), 'Hero switch to Bear must not throw');
+      assert.doesNotThrow(() => game.switchHero('bunny'), 'Hero switch to Bunny must not throw');
+      assert.doesNotThrow(() => game.switchHero('fox'), 'Hero switch to Fox must not throw');
+
       // Simulate enemy attack causing lethal damage
       game.player.invulnerableTimer = 0;
       game.player.hp = 1;
-      const testEnemy = { x: 0, z: 0, radius: 2, hp: 50, type: 'normal', dead: false };
+      const testEnemy = { x: game.player.x, z: game.player.z, radius: 2, hp: 50, type: 'normal', dead: false };
       game.enemies = [testEnemy];
       assert.doesNotThrow(() => game.update(0.016), `Zap Pets lethal damage simulation must not throw`);
       assert.strictEqual(gameOverFired, true, `Zap Pets onGameOver callback must fire upon death`);
