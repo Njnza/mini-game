@@ -8,6 +8,8 @@ import { runBaseGameTests } from './unit/BaseGame.test.js';
 import { runGameRegistryTests } from './unit/GameRegistry.test.js';
 import { runStorageManagerTests } from './unit/StorageManager.test.js';
 import { runAudioManagerTests } from './unit/AudioManager.test.js';
+import { runMethodIntegrityTests } from './unit/MethodIntegrity.test.js';
+import { runMiniGamesLifecycleTests } from './unit/MiniGamesLifecycle.test.js';
 import { runSyntaxTests } from './integration/Syntax.test.js';
 import { runEndpointsTests } from './integration/Endpoints.test.js';
 
@@ -22,6 +24,8 @@ async function main() {
     { name: 'GameRegistry & Metadata Schema', fn: runGameRegistryTests },
     { name: 'StorageManager & High Scores', fn: runStorageManagerTests },
     { name: 'AudioManager & Audio Engine', fn: runAudioManagerTests },
+    { name: 'Method Integrity & Static Safety', fn: runMethodIntegrityTests },
+    { name: 'Mini-Games Real Lifecycle Simulation', fn: runMiniGamesLifecycleTests },
     { name: 'Syntax & ES Module Validation', fn: runSyntaxTests },
     { name: 'Server HTTP Endpoints Integration', fn: runEndpointsTests }
   ];

@@ -189,7 +189,7 @@ export default class ZapPets3DGame extends BaseGame {
         </div>
 
         <!-- Level Up Perk Surge Modal -->
-        <div id="zp-upgrade-modal" style="position:absolute; inset:0; background:rgba(18,14,35,0.88); backdrop-filter:blur(10px); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px;">
+        <div id="zp-upgrade-modal" style="position:absolute; inset:0; background:rgba(18,14,35,0.88); backdrop-filter:blur(10px); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px; pointer-events:auto;">
           <div style="font-family:var(--font-display); font-size:1.6rem; font-weight:900; color:#fde047; margin-bottom:4px; text-shadow:0 0 20px #eab308; letter-spacing:0.5px;">
             ⭐ WAVE SURGE! CHOOSE A PERK ⭐
           </div>
@@ -377,14 +377,27 @@ export default class ZapPets3DGame extends BaseGame {
     this.camera.lookAt(0, 0, 0);
 
     // 3. Renderer with PCFSoftShadowMap
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    try {
+      this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+      this.renderer.setSize(width, height);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    this.webglContainer.innerHTML = '';
-    this.webglContainer.appendChild(this.renderer.domElement);
+      this.webglContainer.innerHTML = '';
+      this.webglContainer.appendChild(this.renderer.domElement);
+    } catch (e) {
+      // Graceful fallback for headless environments or unsupported WebGL
+      this.renderer = {
+        setSize: () => {},
+        setPixelRatio: () => {},
+        render: () => {},
+        dispose: () => {},
+        forceContextLoss: () => {},
+        shadowMap: {},
+        domElement: document.createElement('canvas')
+      };
+    }
 
     // 4. Sunny Daylight Lighting Setup
     const ambientLight = new THREE.AmbientLight(0xfff7e6, 0.9);
@@ -420,31 +433,51 @@ export default class ZapPets3DGame extends BaseGame {
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 128, 128);
+    const ctx = canvas.getContext ? canvas.getContext('2d') : null;
+    if (!ctx) return new THREE.Texture();
+
+    if (ctx.clearRect) ctx.clearRect(0, 0, 128, 128);
 
     // Black expressive cartoon eyes
     ctx.fillStyle = '#1e1b2e';
-    ctx.beginPath();
-    ctx.ellipse(45, 52, 7, 13, -0.08, 0, Math.PI * 2);
-    ctx.fill();
+    if (ctx.ellipse) {
+      ctx.beginPath();
+      ctx.ellipse(45, 52, 7, 13, -0.08, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.beginPath();
-    ctx.ellipse(83, 52, 7, 13, 0.08, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(83, 52, 7, 13, 0.08, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (ctx.arc) {
+      ctx.beginPath();
+      ctx.arc(45, 52, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(83, 52, 8, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Cute white eye shines
     ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(47, 48, 3.5, 0, Math.PI * 2);
-    ctx.arc(85, 48, 3.5, 0, Math.PI * 2);
-    ctx.fill();
+    if (ctx.arc) {
+      ctx.beginPath();
+      ctx.arc(47, 48, 3.5, 0, Math.PI * 2);
+      ctx.arc(85, 48, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Cute open cartoon mouth
     ctx.fillStyle = '#1e1b2e';
-    ctx.beginPath();
-    ctx.ellipse(64, 76, 5, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
+    if (ctx.ellipse) {
+      ctx.beginPath();
+      ctx.ellipse(64, 76, 5, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (ctx.arc) {
+      ctx.beginPath();
+      ctx.arc(64, 76, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     const tex = new THREE.CanvasTexture(canvas);
     return tex;
@@ -1144,10 +1177,18 @@ export default class ZapPets3DGame extends BaseGame {
   }
 
   triggerLevelUpSurge() {
+    if (this.isGameOver || !this.isRunning) return;
+    if (this.upgradeModal && this.upgradeModal.style.display === 'flex') return;
+
     this.player.level++;
     this.isPaused = true;
     this.upgradeModal.style.display = 'flex';
     this.audio.playPowerup();
+
+    // Render one freeze-frame backdrop behind the modal
+    if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
 
     const perks = [
       { id: 'multishot', title: 'Multishot Surge', icon: '⚡', desc: 'Adds +1 piercing projectile per attack burst.' },
@@ -1174,13 +1215,16 @@ export default class ZapPets3DGame extends BaseGame {
         align-items: center;
         text-align: center;
         cursor: pointer;
+        pointer-events: auto;
+        user-select: none;
+        touch-action: manipulation;
         transition: transform 0.2s, border-color 0.2s;
         box-shadow: 0 8px 22px rgba(0,0,0,0.6);
       `;
       card.innerHTML = `
-        <div style="font-size:2.2rem; margin-bottom:8px;">${perk.icon}</div>
-        <div style="font-family:var(--font-display); font-weight:800; font-size:1rem; color:#fde047; margin-bottom:6px;">${perk.title}</div>
-        <div style="font-size:0.75rem; color:#e0e7ff; line-height:1.4;">${perk.desc}</div>
+        <div style="font-size:2.2rem; margin-bottom:8px; pointer-events:none;">${perk.icon}</div>
+        <div style="font-family:var(--font-display); font-weight:800; font-size:1rem; color:#fde047; margin-bottom:6px; pointer-events:none;">${perk.title}</div>
+        <div style="font-size:0.75rem; color:#e0e7ff; line-height:1.4; pointer-events:none;">${perk.desc}</div>
       `;
 
       card.onmouseenter = () => {
@@ -1192,12 +1236,19 @@ export default class ZapPets3DGame extends BaseGame {
         card.style.borderColor = 'rgba(253,224,71,0.5)';
       };
 
-      card.onclick = () => {
+      const selectPerk = (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         this.applyPerk(perk.id);
         this.upgradeModal.style.display = 'none';
-        this.isPaused = false;
+        this.resume();
         this.audio.playPowerup();
       };
+
+      card.addEventListener('pointerdown', selectPerk);
+      card.addEventListener('click', selectPerk);
 
       this.cardsContainer.appendChild(card);
     });
@@ -1405,7 +1456,8 @@ export default class ZapPets3DGame extends BaseGame {
 
           if (this.player.hp <= 0) {
             this.player.hp = 0;
-            this.gameOver();
+            this.emitGameOver();
+            return;
           }
         }
       }

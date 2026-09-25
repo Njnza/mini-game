@@ -149,6 +149,13 @@ export class BaseGame {
   }
 
   /**
+   * Safe alias for emitGameOver
+   */
+  gameOver() {
+    this.emitGameOver();
+  }
+
+  /**
    * Register event listener with automatic cleanup tracking
    */
   addTrackedEventListener(target, event, handler, options = false) {
