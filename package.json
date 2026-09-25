@@ -9,7 +9,16 @@
     "dev": "node server.js",
     "test": "node tests/run-all-tests.js"
   },
-  "keywords": ["game", "mini-games", "arcade", "canvas", "modular-architecture"],
+  "keywords": [
+    "game",
+    "mini-games",
+    "arcade",
+    "canvas",
+    "modular-architecture"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.186.1"
+  }
 }

@@ -57,7 +57,8 @@ export async function runEndpointsTests() {
     '/games/memory-matrix/meta.js',
     '/games/memory-matrix/game.js',
     '/games/zap-pets/meta.js',
-    '/games/zap-pets/game.js'
+    '/games/zap-pets/game.js',
+    '/src/lib/three.module.js'
   ];
 
   try {
