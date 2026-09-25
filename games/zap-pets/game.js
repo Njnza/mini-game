@@ -7,27 +7,29 @@ export const CHARACTERS = {
     name: 'Spark Fox',
     role: 'Speed & Electric',
     icon: '🦊',
-    color: '#f59e0b',
-    bodyColor: 0xf59e0b,
-    accentColor: 0xca8a04,
+    color: '#f97316',
+    bodyColor: 0xf97316,
+    accentColor: 0x7c2d12,
+    earTipColor: 0x1e293b,
+    bellyColor: 0xffedd5,
     maxHp: 100,
-    speed: 16.0,
-    attackRate: 0.32,
-    bulletDamage: 24,
+    speed: 15.5,
+    attackRate: 0.30,
+    bulletDamage: 25,
     bulletColor: 0x38bdf8,
     skill1: {
       name: 'Lightning Dash',
       key: 'SPACE',
       icon: '⚡',
-      cd: 3.2,
-      desc: 'Warp ahead leaving an electrified trail.'
+      cd: 3.0,
+      desc: 'Dash forward with lightning speed, shocking and damaging all ghosts in your trail.'
     },
     skill2: {
       name: 'Thunder Nova',
       key: 'E',
       icon: '💥',
-      cd: 7.5,
-      desc: 'Release a 360° electromagnetic pulse pushing back enemies.'
+      cd: 7.0,
+      desc: 'Emit a 360° electromagnetic pulse that blasts all nearby ghosts backward.'
     }
   },
   bear: {
@@ -37,25 +39,27 @@ export const CHARACTERS = {
     icon: '🐻',
     color: '#0284c7',
     bodyColor: 0x0284c7,
-    accentColor: 0x0369a1,
-    maxHp: 175,
-    speed: 12.0,
-    attackRate: 0.44,
-    bulletDamage: 40,
+    accentColor: 0x075985,
+    earTipColor: 0x0c4a6e,
+    bellyColor: 0xe0f2fe,
+    maxHp: 180,
+    speed: 11.5,
+    attackRate: 0.42,
+    bulletDamage: 45,
     bulletColor: 0x0ea5e9,
     skill1: {
       name: 'Ground Slam',
       key: 'SPACE',
       icon: '💥',
-      cd: 4.5,
-      desc: 'Slam the ground causing an earthquake that stuns enemies.'
+      cd: 4.2,
+      desc: 'Slam the ground causing an earthquake that stuns all ghosts in a large radius.'
     },
     skill2: {
       name: 'Iron Fortress',
       key: 'E',
       icon: '🛡️',
-      cd: 9.0,
-      desc: 'Deploy a protective shield reducing 90% damage.'
+      cd: 8.5,
+      desc: 'Deploy a protective kinetic barrier that reduces incoming damage by 90%.'
     }
   },
   bunny: {
@@ -65,25 +69,27 @@ export const CHARACTERS = {
     icon: '🐰',
     color: '#ec4899',
     bodyColor: 0xec4899,
-    accentColor: 0xa855f7,
-    maxHp: 85,
-    speed: 15.0,
-    attackRate: 0.35,
-    bulletDamage: 28,
+    accentColor: 0x9d174d,
+    earTipColor: 0xfbcfe8,
+    bellyColor: 0xfdf2f8,
+    maxHp: 90,
+    speed: 14.5,
+    attackRate: 0.32,
+    bulletDamage: 30,
     bulletColor: 0xa855f7,
     skill1: {
       name: 'Frost Blink',
       key: 'SPACE',
       icon: '❄️',
-      cd: 3.6,
-      desc: 'Teleport forward leaving an icy decoy trap.'
+      cd: 3.4,
+      desc: 'Teleport forward instantly leaving an icy decoy trap that freezes enemies.'
     },
     skill2: {
       name: 'Blizzard Storm',
       key: 'E',
       icon: '🌪️',
-      cd: 8.5,
-      desc: 'Summon a blizzard vortex slowing and damaging enemies.'
+      cd: 8.0,
+      desc: 'Summon a swirling ice vortex that slows and damages all ghosts in a wide area.'
     }
   }
 };
@@ -92,6 +98,7 @@ export default class ZapPets3DGame extends BaseGame {
   init() {
     this.selectedCharKey = 'fox';
     this.charConfig = CHARACTERS.fox;
+    this.time = 0;
 
     // Calculate reliable dimensions
     const rect = this.container.getBoundingClientRect();
@@ -99,45 +106,61 @@ export default class ZapPets3DGame extends BaseGame {
     const stageHeight = Math.max(380, Math.min(rect.height > 200 ? rect.height - 30 : 580, 620));
 
     this.container.innerHTML = `
-      <div class="zappets-wrapper" style="position:relative; width:${stageWidth}px; height:${stageHeight}px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; user-select:none; border-radius:14px; box-shadow:0 12px 35px rgba(0,0,0,0.7); background:#070913;">
+      <div class="zappets-wrapper" style="position:relative; width:${stageWidth}px; height:${stageHeight}px; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; user-select:none; border-radius:16px; box-shadow:0 14px 40px rgba(0,0,0,0.6); background:#cfe69f;">
         
-        <!-- Top HUD Bar -->
-        <div class="zp-hud-top" style="position:absolute; top:8px; left:12px; right:12px; display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none; z-index:15;">
+        <!-- Top HUD Bar: Exact Zappets Cartoon Style -->
+        <div class="zp-hud-top" style="position:absolute; top:10px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:flex-start; pointer-events:none; z-index:25;">
           
-          <!-- Left: Hero Switcher & EXP Bar -->
-          <div style="display:flex; flex-direction:column; gap:4px; pointer-events:auto;">
-            <!-- Hero Switcher Pills -->
-            <div id="zp-hero-switcher" style="display:flex; gap:4px; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); padding:3px; border-radius:12px; border:1px solid rgba(255,255,255,0.15);">
-              <button class="zp-hero-btn" data-hero="fox" style="border:none; background:#eab308; color:#0f172a; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:8px; cursor:pointer; font-family:var(--font-display);">🦊 Fox</button>
-              <button class="zp-hero-btn" data-hero="bear" style="border:none; background:rgba(255,255,255,0.08); color:#94a3b8; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:8px; cursor:pointer; font-family:var(--font-display);">🐻 Bear</button>
-              <button class="zp-hero-btn" data-hero="bunny" style="border:none; background:rgba(255,255,255,0.08); color:#94a3b8; font-weight:800; font-size:0.75rem; padding:3px 8px; border-radius:8px; cursor:pointer; font-family:var(--font-display);">🐰 Bunny</button>
+          <!-- Left Pill: Exit + Coins -->
+          <div style="display:flex; align-items:center; gap:8px; pointer-events:auto;">
+            <div id="zp-coin-pill" style="display:flex; align-items:center; gap:8px; background:#231b3e; border:2px solid rgba(255,255,255,0.18); border-radius:24px; padding:4px 14px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+              <span id="zp-btn-leave" style="font-size:1.1rem; cursor:pointer;" title="Exit to Hub">🚪</span>
+              <span style="font-size:1.1rem;">🟡</span>
+              <span id="zp-coins-text" style="color:#ffffff; font-family:var(--font-display); font-weight:800; font-size:1rem; min-width:18px;">0</span>
             </div>
             
-            <div style="display:flex; align-items:center; gap:6px; margin-top:2px;">
-              <span id="zp-level-badge" style="background:#eab308; color:#0f172a; font-weight:800; font-size:0.7rem; padding:1px 6px; border-radius:8px;">LV 1</span>
-              <span id="zp-coins-text" style="color:#fbbf24; font-weight:700; font-size:0.8rem;">🪙 0</span>
-            </div>
-            <div style="width:130px; height:6px; background:rgba(255,255,255,0.15); border-radius:3px; overflow:hidden; border:1px solid rgba(255,255,255,0.2);">
-              <div id="zp-exp-fill" style="width:0%; height:100%; background:linear-gradient(90deg, #38bdf8, #06b6d4); transition:width 0.15s ease;"></div>
+            <!-- Quick Hero Switcher Pills -->
+            <div id="zp-hero-switcher" style="display:flex; gap:4px; background:rgba(35,27,62,0.85); backdrop-filter:blur(6px); padding:3px; border-radius:18px; border:1px solid rgba(255,255,255,0.15);">
+              <button class="zp-hero-btn" data-hero="fox" style="border:none; background:#f97316; color:#ffffff; font-weight:800; font-size:0.75rem; padding:4px 9px; border-radius:14px; cursor:pointer; font-family:var(--font-display);">🦊 Fox</button>
+              <button class="zp-hero-btn" data-hero="bear" style="border:none; background:transparent; color:#94a3b8; font-weight:800; font-size:0.75rem; padding:4px 9px; border-radius:14px; cursor:pointer; font-family:var(--font-display);">🐻 Bear</button>
+              <button class="zp-hero-btn" data-hero="bunny" style="border:none; background:transparent; color:#94a3b8; font-weight:800; font-size:0.75rem; padding:4px 9px; border-radius:14px; cursor:pointer; font-family:var(--font-display);">🐰 Bunny</button>
             </div>
           </div>
 
-          <!-- Center: Wave & Boss Bar -->
-          <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-            <div style="background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:3px 16px; font-family:var(--font-display); font-size:0.9rem; font-weight:800; color:#f8fafc; letter-spacing:0.5px;">
-              WAVE <span id="zp-wave-num" style="color:#eab308;">1</span> • <span id="zp-wave-timer">30</span>s
+          <!-- Center Banner: Purple Shield + Golden Segmented Progress Bar -->
+          <div style="display:flex; align-items:center; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.35)); pointer-events:auto;">
+            <!-- Wave Shield Badge -->
+            <div style="background:#2b204e; border:2px solid #1a1332; border-radius:10px 0 0 10px; padding:4px 12px; display:flex; flex-direction:column; align-items:center; z-index:2; box-shadow:inset 0 1px 0 rgba(255,255,255,0.25);">
+              <span style="font-size:0.55rem; color:#a5b4fc; font-weight:800; letter-spacing:0.5px; text-transform:uppercase;">WAVE</span>
+              <span id="zp-wave-num" style="font-family:var(--font-display); font-size:1.15rem; font-weight:900; color:#ffffff; line-height:1;">1</span>
             </div>
-            <div id="zp-boss-bar" style="display:none; width:180px; flex-direction:column; align-items:center;">
-              <span style="font-size:0.7rem; color:#ef4444; font-weight:700; margin-bottom:2px;">⚠️ GOLIATH BOSS ⚠️</span>
-              <div style="width:100%; height:7px; background:rgba(0,0,0,0.6); border:1px solid #ef4444; border-radius:4px; overflow:hidden;">
-                <div id="zp-boss-fill" style="width:100%; height:100%; background:#ef4444;"></div>
+            <!-- Segmented Yellow Wave Bar -->
+            <div style="position:relative; width:140px; height:24px; background:#1b1530; border:2px solid #1a1332; border-left:none; border-radius:0 8px 8px 0; overflow:hidden; display:flex; align-items:center; padding:2px;">
+              <div id="zp-wave-progress-fill" style="width:0%; height:100%; background:linear-gradient(180deg, #fde047 0%, #eab308 100%); border-radius:0 4px 4px 0; transition:width 0.25s ease;"></div>
+              <!-- Segment notch overlay -->
+              <div style="position:absolute; inset:0; display:flex; justify-content:space-between; padding:0 12px; pointer-events:none; opacity:0.35;">
+                <span style="border-right:1px solid #000; height:100%;"></span>
+                <span style="border-right:1px solid #000; height:100%;"></span>
+                <span style="border-right:1px solid #000; height:100%;"></span>
               </div>
+              <span id="zp-wave-target-text" style="position:absolute; right:8px; font-family:var(--font-display); font-weight:900; font-size:0.75rem; color:#ffffff; text-shadow:0 1px 3px #000;">8</span>
             </div>
           </div>
 
-          <!-- Right: Minimap Radar -->
-          <div style="position:relative; width:75px; height:75px; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:10px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,0.5);">
-            <canvas id="zp-minimap" width="75" height="75" style="display:block;"></canvas>
+          <!-- Right Pill: Star Level -->
+          <div style="display:flex; align-items:center; gap:8px; pointer-events:auto;">
+            <div style="display:flex; align-items:center; gap:6px; background:#231b3e; border:2px solid rgba(255,255,255,0.18); border-radius:24px; padding:4px 14px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+              <span style="font-size:1.15rem;">⭐</span>
+              <span id="zp-level-badge" style="color:#ffffff; font-family:var(--font-display); font-weight:900; font-size:1rem;">1</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3D Overhead Health Bar tracking Player Position -->
+        <div id="zp-player-floating-hud" style="position:absolute; pointer-events:none; z-index:20; transform:translate(-50%, -100%); display:flex; flex-direction:column; align-items:center;">
+          <div style="width:68px; height:10px; background:#1e1b2e; border:1.5px solid #000; border-radius:6px; overflow:hidden; position:relative; box-shadow:0 2px 6px rgba(0,0,0,0.5);">
+            <div id="zp-floating-hp-fill" style="width:100%; height:100%; background:linear-gradient(90deg, #22c55e, #4ade80); transition:width 0.12s ease;"></div>
+            <span id="zp-floating-hp-text" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:900; font-size:0.55rem; color:#ffffff; text-shadow:0 1px 2px #000;">100</span>
           </div>
         </div>
 
@@ -146,49 +169,49 @@ export default class ZapPets3DGame extends BaseGame {
 
         <!-- Touch Controls Layer -->
         <div class="zp-touch-layer" style="position:absolute; inset:0; pointer-events:none; z-index:20;">
-          <div id="zp-joystick-zone" style="position:absolute; bottom:16px; left:16px; width:110px; height:110px; border-radius:50%; background:rgba(255,255,255,0.06); border:2px dashed rgba(255,255,255,0.2); pointer-events:auto; display:none; align-items:center; justify-content:center;">
-            <div id="zp-joystick-knob" style="width:44px; height:44px; border-radius:50%; background:#38bdf8; box-shadow:0 0 15px #38bdf8; transform:translate(0,0);"></div>
+          <div id="zp-joystick-zone" style="position:absolute; bottom:18px; left:18px; width:110px; height:110px; border-radius:50%; background:rgba(35,27,62,0.3); border:2px dashed rgba(255,255,255,0.35); pointer-events:auto; display:none; align-items:center; justify-content:center;">
+            <div id="zp-joystick-knob" style="width:44px; height:44px; border-radius:50%; background:#f97316; box-shadow:0 0 15px rgba(249,115,22,0.7); transform:translate(0,0);"></div>
           </div>
 
-          <!-- Skills Buttons -->
+          <!-- Skills Buttons: Stylized Purple/Gold Circles -->
           <div class="zp-skills-container" style="position:absolute; bottom:20px; right:20px; display:flex; gap:12px; pointer-events:auto;">
-            <button id="zp-btn-skill1" style="width:54px; height:54px; border-radius:50%; background:#1e1b4b; border:2px solid #38bdf8; color:#fff; font-size:1.3rem; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 15px rgba(56,189,248,0.4); position:relative;">
+            <button id="zp-btn-skill1" style="width:58px; height:58px; border-radius:50%; background:#241b3e; border:3px solid #fde047; color:#fff; font-size:1.4rem; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,0.5); position:relative;">
               <span id="zp-s1-icon">⚡</span>
-              <span style="font-size:0.55rem; font-weight:700; color:#38bdf8;">SPACE</span>
-              <div id="zp-s1-cd" style="position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; color:#fff;"></div>
+              <span style="font-size:0.55rem; font-weight:800; color:#fde047;">SPACE</span>
+              <div id="zp-s1-cd" style="position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.75); display:none; align-items:center; justify-content:center; font-size:0.8rem; font-weight:900; color:#fff;"></div>
             </button>
-            <button id="zp-btn-skill2" style="width:54px; height:54px; border-radius:50%; background:#3b0764; border:2px solid #ec4899; color:#fff; font-size:1.3rem; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 4px 15px rgba(236,72,153,0.4); position:relative;">
+            <button id="zp-btn-skill2" style="width:58px; height:58px; border-radius:50%; background:#37225c; border:3px solid #f472b6; color:#fff; font-size:1.4rem; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,0.5); position:relative;">
               <span id="zp-s2-icon">💥</span>
-              <span style="font-size:0.55rem; font-weight:700; color:#ec4899;">E</span>
-              <div id="zp-s2-cd" style="position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; color:#fff;"></div>
+              <span style="font-size:0.55rem; font-weight:800; color:#f472b6;">E</span>
+              <div id="zp-s2-cd" style="position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,0.75); display:none; align-items:center; justify-content:center; font-size:0.8rem; font-weight:900; color:#fff;"></div>
             </button>
           </div>
         </div>
 
-        <!-- Level Up Modal Overlay -->
-        <div id="zp-upgrade-modal" style="position:absolute; inset:0; background:rgba(5,7,15,0.88); backdrop-filter:blur(10px); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px;">
-          <div style="font-family:var(--font-display); font-size:1.5rem; font-weight:900; color:#fbbf24; margin-bottom:4px; text-shadow:0 0 20px #eab308;">
-            ⚡ LEVEL UP SURGE! ⚡
+        <!-- Level Up Perk Surge Modal -->
+        <div id="zp-upgrade-modal" style="position:absolute; inset:0; background:rgba(18,14,35,0.88); backdrop-filter:blur(10px); z-index:50; display:none; flex-direction:column; align-items:center; justify-content:center; padding:16px;">
+          <div style="font-family:var(--font-display); font-size:1.6rem; font-weight:900; color:#fde047; margin-bottom:4px; text-shadow:0 0 20px #eab308; letter-spacing:0.5px;">
+            ⭐ WAVE SURGE! CHOOSE A PERK ⭐
           </div>
-          <div style="color:#94a3b8; font-size:0.85rem; margin-bottom:18px;">Choose 1 upgrade perk to boost your cyber pet:</div>
-          <div id="zp-cards-container" style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; max-width:640px;"></div>
+          <div style="color:#e0e7ff; font-size:0.85rem; margin-bottom:18px;">Boost your pet's combat power to survive the graveyard!</div>
+          <div id="zp-cards-container" style="display:flex; gap:14px; flex-wrap:wrap; justify-content:center; max-width:680px;"></div>
         </div>
 
       </div>
     `;
 
     this.webglContainer = this.container.querySelector('#zp-webgl-container');
-    this.minimapCanvas = this.container.querySelector('#zp-minimap');
-    this.minimapCtx = this.minimapCanvas.getContext('2d');
+    this.floatingHud = this.container.querySelector('#zp-player-floating-hud');
+    this.floatingHpFill = this.container.querySelector('#zp-floating-hp-fill');
+    this.floatingHpText = this.container.querySelector('#zp-floating-hp-text');
 
-    // Cached elements
-    this.levelBadge = this.container.querySelector('#zp-level-badge');
     this.coinsText = this.container.querySelector('#zp-coins-text');
-    this.expFill = this.container.querySelector('#zp-exp-fill');
+    this.levelBadge = this.container.querySelector('#zp-level-badge');
     this.waveNumEl = this.container.querySelector('#zp-wave-num');
-    this.waveTimerEl = this.container.querySelector('#zp-wave-timer');
-    this.bossBar = this.container.querySelector('#zp-boss-bar');
-    this.bossFill = this.container.querySelector('#zp-boss-fill');
+    this.waveProgressFill = this.container.querySelector('#zp-wave-progress-fill');
+    this.waveTargetText = this.container.querySelector('#zp-wave-target-text');
+
+    this.btnLeave = this.container.querySelector('#zp-btn-leave');
     this.upgradeModal = this.container.querySelector('#zp-upgrade-modal');
     this.cardsContainer = this.container.querySelector('#zp-cards-container');
 
@@ -212,7 +235,13 @@ export default class ZapPets3DGame extends BaseGame {
       });
     });
 
-    // Check touch devices
+    if (this.btnLeave) {
+      this.addTrackedEventListener(this.btnLeave, 'click', () => {
+        window.location.hash = '#/hub';
+      });
+    }
+
+    // Touch device support
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
       this.joystickZone.style.display = 'flex';
       this.setupTouchJoystick();
@@ -236,7 +265,6 @@ export default class ZapPets3DGame extends BaseGame {
     this.addTrackedEventListener(window, 'keydown', onKeyDown);
     this.addTrackedEventListener(window, 'keyup', onKeyUp);
 
-    // Skill button clicks
     this.addTrackedEventListener(this.btnSkill1, 'pointerdown', (e) => {
       e.stopPropagation();
       this.triggerSkill1();
@@ -249,7 +277,7 @@ export default class ZapPets3DGame extends BaseGame {
     const onResize = () => this.handleResize();
     this.addTrackedEventListener(window, 'resize', onResize);
 
-    // IMMEDIATELY INITIALIZE 3D SCENE so nothing is blank!
+    // Initialize 3D Scene Immediately with Cartoon Style
     this.init3DScene(stageWidth, stageHeight);
   }
 
@@ -258,22 +286,19 @@ export default class ZapPets3DGame extends BaseGame {
     this.selectedCharKey = heroKey;
     this.charConfig = CHARACTERS[heroKey];
 
-    // Update buttons UI
     this.heroBtns.forEach(b => {
       if (b.dataset.hero === heroKey) {
         b.style.background = this.charConfig.color;
-        b.style.color = '#0f172a';
+        b.style.color = '#ffffff';
       } else {
-        b.style.background = 'rgba(255,255,255,0.08)';
+        b.style.background = 'transparent';
         b.style.color = '#94a3b8';
       }
     });
 
-    // Update skill buttons icons
     this.s1Icon.textContent = this.charConfig.skill1.icon;
     this.s2Icon.textContent = this.charConfig.skill2.icon;
 
-    // Update player parameters
     if (this.player) {
       this.player.baseSpeed = this.charConfig.speed;
       this.player.maxHp = this.charConfig.maxHp;
@@ -284,7 +309,6 @@ export default class ZapPets3DGame extends BaseGame {
       this.player.s2MaxCd = this.charConfig.skill2.cd;
     }
 
-    // Rebuild 3D Model with new hero visual
     this.buildPlayer3D();
     this.audio.playVictory();
   }
@@ -308,7 +332,7 @@ export default class ZapPets3DGame extends BaseGame {
           const dx = touch.clientX - startX;
           const dy = touch.clientY - startY;
           const dist = Math.hypot(dx, dy);
-          const maxDist = 40;
+          const maxDist = 38;
           const angle = Math.atan2(dy, dx);
           const clampedDist = Math.min(dist, maxDist);
 
@@ -342,16 +366,17 @@ export default class ZapPets3DGame extends BaseGame {
   }
 
   init3DScene(width, height) {
-    // 1. Scene
+    // 1. Scene & Pastel Sunny Background
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0a0d1a);
+    this.scene.background = new THREE.Color(0xd7edab);
+    this.scene.fog = new THREE.FogExp2(0xd7edab, 0.007);
 
-    // 2. Camera (Isometric Top-Down 3D Perspective)
-    this.camera = new THREE.PerspectiveCamera(48, width / height, 0.1, 1000);
-    this.camera.position.set(0, 24, 18);
-    this.camera.lookAt(0, 0.5, 0);
+    // 2. Camera (Low FOV Isometric Cartoon Perspective)
+    this.camera = new THREE.PerspectiveCamera(36, width / height, 0.1, 500);
+    this.camera.position.set(0, 36, 26);
+    this.camera.lookAt(0, 0, 0);
 
-    // 3. Renderer
+    // 3. Renderer with PCFSoftShadowMap
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -361,63 +386,281 @@ export default class ZapPets3DGame extends BaseGame {
     this.webglContainer.innerHTML = '';
     this.webglContainer.appendChild(this.renderer.domElement);
 
-    // 4. Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    // 4. Sunny Daylight Lighting Setup
+    const ambientLight = new THREE.AmbientLight(0xfff7e6, 0.9);
     this.scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
-    dirLight.position.set(30, 50, 25);
-    dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 1024;
-    dirLight.shadow.mapSize.height = 1024;
-    this.scene.add(dirLight);
+    // Directional Sun Light angled to cast distinct diagonal cartoon shadows
+    const sunLight = new THREE.DirectionalLight(0xfffcf0, 1.45);
+    sunLight.position.set(30, 52, -26);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 10;
+    sunLight.shadow.camera.far = 130;
+    sunLight.shadow.camera.left = -50;
+    sunLight.shadow.camera.right = 50;
+    sunLight.shadow.camera.top = 50;
+    sunLight.shadow.camera.bottom = -50;
+    sunLight.shadow.bias = -0.0004;
+    this.scene.add(sunLight);
 
-    // 5. Arena Floor
+    // 5. Build Graveyard Garden Map
     this.arenaSize = 160;
-    const floorGeo = new THREE.PlaneGeometry(this.arenaSize, this.arenaSize);
-    const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x0f172a,
-      roughness: 0.7,
-      metalness: 0.2
-    });
-    this.floor = new THREE.Mesh(floorGeo, floorMat);
-    this.floor.rotation.x = -Math.PI / 2;
-    this.floor.receiveShadow = true;
-    this.scene.add(this.floor);
+    this.buildGraveyardMap();
 
-    // Grid Overlay
-    const grid = new THREE.GridHelper(this.arenaSize, 40, 0x06b6d4, 0x1e293b);
-    grid.position.y = 0.05;
-    this.scene.add(grid);
+    // 6. Preload Ghost Face Texture
+    this.ghostFaceTexture = this.createGhostFaceTexture();
 
-    // Perimeter walls
-    this.buildArenaFences();
-
-    // 6. Build Player Model
+    // 7. Build Player Model
     this.buildPlayer3D();
   }
 
-  buildArenaFences() {
-    const half = this.arenaSize / 2;
-    const fenceMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true });
-    const wallGeo = new THREE.BoxGeometry(this.arenaSize, 3, 0.4);
+  createGhostFaceTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, 128, 128);
 
-    const wallN = new THREE.Mesh(wallGeo, fenceMat);
-    wallN.position.set(0, 1.5, -half);
-    this.scene.add(wallN);
+    // Black expressive cartoon eyes
+    ctx.fillStyle = '#1e1b2e';
+    ctx.beginPath();
+    ctx.ellipse(45, 52, 7, 13, -0.08, 0, Math.PI * 2);
+    ctx.fill();
 
-    const wallS = new THREE.Mesh(wallGeo, fenceMat);
-    wallS.position.set(0, 1.5, half);
-    this.scene.add(wallS);
+    ctx.beginPath();
+    ctx.ellipse(83, 52, 7, 13, 0.08, 0, Math.PI * 2);
+    ctx.fill();
 
-    const wallGeoSide = new THREE.BoxGeometry(0.4, 3, this.arenaSize);
-    const wallW = new THREE.Mesh(wallGeoSide, fenceMat);
-    wallW.position.set(-half, 1.5, 0);
-    this.scene.add(wallW);
+    // Cute white eye shines
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(47, 48, 3.5, 0, Math.PI * 2);
+    ctx.arc(85, 48, 3.5, 0, Math.PI * 2);
+    ctx.fill();
 
-    const wallE = new THREE.Mesh(wallGeoSide, fenceMat);
-    wallE.position.set(half, 1.5, 0);
-    this.scene.add(wallE);
+    // Cute open cartoon mouth
+    ctx.fillStyle = '#1e1b2e';
+    ctx.beginPath();
+    ctx.ellipse(64, 76, 5, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const tex = new THREE.CanvasTexture(canvas);
+    return tex;
+  }
+
+  buildGraveyardMap() {
+    // A. Main Grass Floor
+    const floorGeo = new THREE.PlaneGeometry(this.arenaSize, this.arenaSize);
+    const floorMat = new THREE.MeshLambertMaterial({ color: 0xcfe69f });
+    const floor = new THREE.Mesh(floorGeo, floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    this.scene.add(floor);
+
+    // B. Scattered Soft Lighter Lawn Circles
+    const patchMat1 = new THREE.MeshBasicMaterial({ color: 0xdbf0a8 });
+    const patchMat2 = new THREE.MeshBasicMaterial({ color: 0xc3df8e });
+    for (let i = 0; i < 35; i++) {
+      const radius = 2.5 + (i % 5) * 1.2;
+      const patchGeo = new THREE.CircleGeometry(radius, 16);
+      const patchMesh = new THREE.Mesh(patchGeo, i % 2 === 0 ? patchMat1 : patchMat2);
+      patchMesh.rotation.x = -Math.PI / 2;
+      const angle = (i * 1.37) % (Math.PI * 2);
+      const dist = 8 + ((i * 19) % 65);
+      patchMesh.position.set(Math.cos(angle) * dist, 0.015, Math.sin(angle) * dist);
+      patchMesh.receiveShadow = true;
+      this.scene.add(patchMesh);
+    }
+
+    // C. Cobblestone Crossroads Paths (North, South, East, West)
+    const paverMat1 = new THREE.MeshStandardMaterial({ color: 0xe8e8f2, roughness: 0.85 });
+    const paverMat2 = new THREE.MeshStandardMaterial({ color: 0xdcdce8, roughness: 0.85 });
+
+    // Center Plaza Ring
+    const plazaRings = 3;
+    for (let r = 1; r <= plazaRings; r++) {
+      const count = r * 8;
+      const radius = r * 3.2;
+      for (let i = 0; i < count; i++) {
+        const ang = (i / count) * Math.PI * 2;
+        const pGeo = new THREE.BoxGeometry(2.2, 0.12, 1.8);
+        const pMesh = new THREE.Mesh(pGeo, (i + r) % 2 === 0 ? paverMat1 : paverMat2);
+        pMesh.position.set(Math.cos(ang) * radius, 0.06, Math.sin(ang) * radius);
+        pMesh.rotation.y = -ang + ((i % 3) - 1) * 0.1;
+        pMesh.receiveShadow = true;
+        this.scene.add(pMesh);
+      }
+    }
+
+    // 4 Avenues
+    const pathHalfLen = 70;
+    for (let d = 0; d < 4; d++) {
+      const isVertical = d % 2 === 0;
+      const sign = d < 2 ? 1 : -1;
+
+      for (let step = 11; step < pathHalfLen; step += 3.2) {
+        // Paver rows
+        for (let col = -1; col <= 1; col++) {
+          const pGeo = new THREE.BoxGeometry(2.3, 0.12, 2.7);
+          const pMesh = new THREE.Mesh(pGeo, (step + col) % 2 === 0 ? paverMat1 : paverMat2);
+
+          const px = isVertical ? col * 2.5 + ((step % 2) ? 0.3 : -0.2) : step * sign;
+          const pz = isVertical ? step * sign : col * 2.5 + ((step % 2) ? 0.3 : -0.2);
+
+          pMesh.position.set(px, 0.06, pz);
+          pMesh.rotation.y = ((col + step) % 5) * 0.04;
+          pMesh.receiveShadow = true;
+          this.scene.add(pMesh);
+        }
+      }
+    }
+
+    // D. Center Obelisk Monument
+    const obeliskGroup = new THREE.Group();
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.7 });
+    const darkStoneMat = new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.8 });
+
+    // Dais Tier 1 & 2
+    const base1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.6, 4.2), darkStoneMat);
+    base1.position.y = 0.3;
+    base1.castShadow = true;
+    base1.receiveShadow = true;
+    obeliskGroup.add(base1);
+
+    const base2 = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.5, 3.0), stoneMat);
+    base2.position.y = 0.8;
+    base2.castShadow = true;
+    base2.receiveShadow = true;
+    obeliskGroup.add(base2);
+
+    // Tapered 4-sided Obelisk Pillar
+    const shaftGeo = new THREE.CylinderGeometry(0.8, 1.35, 8.5, 4);
+    const shaft = new THREE.Mesh(shaftGeo, stoneMat);
+    shaft.position.y = 5.2;
+    shaft.rotation.y = Math.PI / 4;
+    shaft.castShadow = true;
+    shaft.receiveShadow = true;
+    obeliskGroup.add(shaft);
+
+    // Pointed Cap
+    const capGeo = new THREE.ConeGeometry(1.15, 1.6, 4);
+    const cap = new THREE.Mesh(capGeo, darkStoneMat);
+    cap.position.y = 10.2;
+    cap.rotation.y = Math.PI / 4;
+    cap.castShadow = true;
+    obeliskGroup.add(cap);
+
+    this.scene.add(obeliskGroup);
+
+    // E. Scattered Graveyard Props (Tombstones, Pillars, Pumpkins)
+    this.buildProps();
+  }
+
+  buildProps() {
+    const tombstoneMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8 });
+    const dirtMat = new THREE.MeshLambertMaterial({ color: 0xb09576 });
+    const pumpkinMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.6 });
+    const stalkMat = new THREE.MeshStandardMaterial({ color: 0x65a30d });
+    const pillarMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.75 });
+    const brickRingMat = new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.8 });
+
+    // 12 Tombstones with Soil Mounds
+    const tombCoords = [
+      { x: -16, z: -14 }, { x: -22, z: -14 }, { x: -28, z: -14 },
+      { x: -18, z: 18 }, { x: -24, z: 22 }, { x: -30, z: 18 },
+      { x: 18, z: -18 }, { x: 25, z: -22 }, { x: 31, z: -16 },
+      { x: 16, z: 18 }, { x: 22, z: 22 }, { x: 28, z: 18 }
+    ];
+
+    tombCoords.forEach(pos => {
+      const g = new THREE.Group();
+      // Soil Mound
+      const dirt = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.15, 3.6), dirtMat);
+      dirt.position.set(0, 0.08, 0);
+      dirt.receiveShadow = true;
+      g.add(dirt);
+
+      // Stone Headstone
+      const stoneBody = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.4, 0.35), tombstoneMat);
+      stoneBody.position.set(0, 0.8, -1.3);
+      stoneBody.castShadow = true;
+      stoneBody.receiveShadow = true;
+      g.add(stoneBody);
+
+      const topArch = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.75, 0.35, 12), tombstoneMat);
+      topArch.rotation.z = Math.PI / 2;
+      topArch.position.set(0, 1.5, -1.3);
+      topArch.castShadow = true;
+      g.add(topArch);
+
+      g.position.set(pos.x, 0, pos.z);
+      this.scene.add(g);
+    });
+
+    // 8 Ruined Classical Pillars
+    const pillarCoords = [
+      { x: -14, z: -32, broken: false },
+      { x: -34, z: -14, broken: true },
+      { x: 32, z: -14, broken: false },
+      { x: 14, z: -34, broken: true },
+      { x: 34, z: 16, broken: true },
+      { x: 16, z: 32, broken: false },
+      { x: -32, z: 16, broken: false },
+      { x: -16, z: 34, broken: true }
+    ];
+
+    pillarCoords.forEach(p => {
+      const colG = new THREE.Group();
+      const h = p.broken ? 3.0 : 5.4;
+
+      const base = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.5, 2.4), pillarMat);
+      base.position.y = 0.25;
+      base.castShadow = true;
+      colG.add(base);
+
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.95, h, 12), pillarMat);
+      shaft.position.y = 0.5 + h / 2;
+      shaft.castShadow = true;
+      shaft.receiveShadow = true;
+      colG.add(shaft);
+
+      // Terracotta ring
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.92, 0.4, 12), brickRingMat);
+      ring.position.y = 1.2;
+      colG.add(ring);
+
+      if (!p.broken) {
+        const capital = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.6, 2.3), pillarMat);
+        capital.position.y = 0.5 + h + 0.3;
+        capital.castShadow = true;
+        colG.add(capital);
+      }
+
+      colG.position.set(p.x, 0, p.z);
+      this.scene.add(colG);
+    });
+
+    // 25 Cute Little Pumpkins
+    for (let i = 0; i < 25; i++) {
+      const pumpG = new THREE.Group();
+      const pBody = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), pumpkinMat);
+      pBody.scale.set(1, 0.72, 1);
+      pBody.position.y = 0.36;
+      pBody.castShadow = true;
+      pumpG.add(pBody);
+
+      const pStalk = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.28, 6), stalkMat);
+      pStalk.position.set(0.04, 0.76, 0);
+      pStalk.rotation.z = 0.25;
+      pumpG.add(pStalk);
+
+      const ang = (i * 1.7) % (Math.PI * 2);
+      const rad = 7 + ((i * 13) % 45);
+      pumpG.position.set(Math.cos(ang) * rad + ((i % 3) - 1) * 1.5, 0, Math.sin(ang) * rad);
+      this.scene.add(pumpG);
+    }
   }
 
   buildPlayer3D() {
@@ -425,23 +668,25 @@ export default class ZapPets3DGame extends BaseGame {
       this.scene.remove(this.playerGroup);
       this.playerGroup.traverse(o => {
         if (o.geometry) o.geometry.dispose();
-        if (o.material) o.material.dispose();
+        if (o.material) {
+          if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+          else o.material.dispose();
+        }
       });
     }
 
     this.playerGroup = new THREE.Group();
     const char = this.charConfig;
 
-    // Body
-    const bodyGeo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
+    // Body Capsule / Box
+    const bodyGeo = new THREE.BoxGeometry(1.6, 1.4, 1.7);
     const bodyMat = new THREE.MeshStandardMaterial({
       color: char.bodyColor,
-      roughness: 0.35,
-      metalness: 0.1,
-      flatShading: true
+      roughness: 0.45,
+      metalness: 0.05
     });
 
-    // Auto-load PixAssets custom pixel-art texture (games/zap-pets/assets/{char.id}.png)
+    // Auto-load PixAssets custom PNG if present
     if (THREE.TextureLoader) {
       const loader = new THREE.TextureLoader();
       loader.load(`games/zap-pets/assets/${char.id}.png`, (tex) => {
@@ -456,54 +701,85 @@ export default class ZapPets3DGame extends BaseGame {
     this.playerBody = new THREE.Mesh(bodyGeo, bodyMat);
     this.playerBody.position.y = 1.0;
     this.playerBody.castShadow = true;
+    this.playerBody.receiveShadow = true;
     this.playerGroup.add(this.playerBody);
 
-    // Eyes
-    const eyeGeo = new THREE.BoxGeometry(0.3, 0.3, 0.1);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+    // Cute Cheeks / Belly
+    const bellyGeo = new THREE.BoxGeometry(1.2, 0.9, 0.4);
+    const bellyMat = new THREE.MeshLambertMaterial({ color: char.bellyColor });
+    const belly = new THREE.Mesh(bellyGeo, bellyMat);
+    belly.position.set(0, 0.85, 0.82);
+    this.playerGroup.add(belly);
+
+    // Cartoon Eyes
+    const eyeGeo = new THREE.BoxGeometry(0.24, 0.28, 0.12);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x1e1b2e });
     const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.4, 1.2, 0.82);
+    eyeL.position.set(-0.4, 1.15, 0.9);
     this.playerGroup.add(eyeL);
 
     const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeR.position.set(0.4, 1.2, 0.82);
+    eyeR.position.set(0.4, 1.15, 0.9);
     this.playerGroup.add(eyeR);
 
-    // Ears
+    // Character-Specific Ears and Tail
     if (char.id === 'fox') {
-      const earGeo = new THREE.ConeGeometry(0.4, 0.9, 4);
-      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor, flatShading: true });
+      // Fox Pointed Ears
+      const earGeo = new THREE.ConeGeometry(0.38, 0.95, 4);
+      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor });
       const earL = new THREE.Mesh(earGeo, earMat);
-      earL.position.set(-0.6, 2.0, 0.1);
-      earL.rotation.z = 0.2;
+      earL.position.set(-0.55, 1.95, 0.2);
+      earL.rotation.z = 0.22;
       this.playerGroup.add(earL);
 
       const earR = new THREE.Mesh(earGeo, earMat);
-      earR.position.set(0.6, 2.0, 0.1);
-      earR.rotation.z = -0.2;
+      earR.position.set(0.55, 1.95, 0.2);
+      earR.rotation.z = -0.22;
       this.playerGroup.add(earR);
+
+      // Fluffy Tail
+      const tailGeo = new THREE.ConeGeometry(0.45, 1.4, 6);
+      const tail = new THREE.Mesh(tailGeo, earMat);
+      tail.position.set(0, 1.0, -1.3);
+      tail.rotation.x = -Math.PI / 3;
+      tail.castShadow = true;
+      this.playerGroup.add(tail);
+
     } else if (char.id === 'bear') {
-      const earGeo = new THREE.SphereGeometry(0.35, 6, 6);
-      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor, flatShading: true });
+      // Bear Round Ears
+      const earGeo = new THREE.SphereGeometry(0.38, 8, 8);
+      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor });
       const earL = new THREE.Mesh(earGeo, earMat);
-      earL.position.set(-0.7, 1.8, 0);
+      earL.position.set(-0.7, 1.7, 0.1);
       this.playerGroup.add(earL);
 
       const earR = new THREE.Mesh(earGeo, earMat);
-      earR.position.set(0.7, 1.8, 0);
+      earR.position.set(0.7, 1.7, 0.1);
       this.playerGroup.add(earR);
+
+      // Cute Bear Snout
+      const snout = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.45, 0.4), new THREE.MeshLambertMaterial({ color: 0x93c5fd }));
+      snout.position.set(0, 0.95, 0.95);
+      this.playerGroup.add(snout);
+
     } else if (char.id === 'bunny') {
-      const earGeo = new THREE.BoxGeometry(0.25, 1.4, 0.25);
-      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor, flatShading: true });
+      // Long Bunny Ears
+      const earGeo = new THREE.BoxGeometry(0.24, 1.5, 0.24);
+      const earMat = new THREE.MeshStandardMaterial({ color: char.accentColor });
       const earL = new THREE.Mesh(earGeo, earMat);
-      earL.position.set(-0.4, 2.2, 0);
-      earL.rotation.z = 0.1;
+      earL.position.set(-0.38, 2.2, 0.1);
+      earL.rotation.z = 0.12;
       this.playerGroup.add(earL);
 
       const earR = new THREE.Mesh(earGeo, earMat);
-      earR.position.set(0.4, 2.2, 0);
-      earR.rotation.z = -0.1;
+      earR.position.set(0.38, 2.2, 0.1);
+      earR.rotation.z = -0.12;
       this.playerGroup.add(earR);
+
+      // Bunny Fluffy Tail
+      const tail = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+      tail.position.set(0, 0.8, -1.05);
+      this.playerGroup.add(tail);
     }
 
     if (this.player) {
@@ -517,7 +793,6 @@ export default class ZapPets3DGame extends BaseGame {
   start() {
     super.start();
 
-    // Player logical state
     this.player = {
       x: 0,
       z: 0,
@@ -533,7 +808,6 @@ export default class ZapPets3DGame extends BaseGame {
       xpNeeded: 70,
       coins: 0,
 
-      // Skills cooldowns
       s1Cd: 0,
       s1MaxCd: this.charConfig.skill1.cd,
       s2Cd: 0,
@@ -550,18 +824,19 @@ export default class ZapPets3DGame extends BaseGame {
       multishot: 1,
       bulletDamage: this.charConfig.bulletDamage,
       bulletSpeed: 38,
-      bulletRange: 28,
-      critChance: 0.12,
+      bulletRange: 32,
+      critChance: 0.14,
       orbitingOrbs: 0,
       speedMultiplier: 1.0,
-      magnetRadius: 14
+      magnetRadius: 16
     };
 
-    // Waves
+    // Wave Progression
     this.wave = 1;
-    this.waveTimeLeft = 30;
+    this.waveDefeated = 0;
+    this.waveTarget = 8;
     this.spawnTimer = 0;
-    this.spawnInterval = 1.0;
+    this.spawnInterval = 0.95;
 
     // Collections
     this.enemies = [];
@@ -600,8 +875,8 @@ export default class ZapPets3DGame extends BaseGame {
       this.enemies.forEach(e => {
         const d = Math.hypot(e.x - this.player.x, e.z - this.player.z);
         if (d <= slamRadius) {
-          e.hp -= 60;
-          e.speed = Math.max(2, e.speed * 0.4);
+          e.hp -= 65;
+          e.speed = Math.max(2, e.speed * 0.35);
           if (e.hp <= 0 && !e.dead) this.handleEnemyDefeated(e);
         }
       });
@@ -611,17 +886,8 @@ export default class ZapPets3DGame extends BaseGame {
       this.player.x += Math.sin(this.player.facingAngle) * blinkDist;
       this.player.z += Math.cos(this.player.facingAngle) * blinkDist;
       this.clampPlayerPosition();
-      this.audio.playJump();
-
-      const freezeRadius = 10;
-      this.enemies.forEach(e => {
-        const d = Math.hypot(e.x - this.player.x, e.z - this.player.z);
-        if (d <= freezeRadius) {
-          e.hp -= 35;
-          e.frozenTimer = 2.0;
-        }
-      });
-      this.spawnShockwaveEffect(freezeRadius, 0xa855f7);
+      this.audio.playPowerup();
+      this.spawnIceDecoyTrap();
     }
   }
 
@@ -638,17 +904,17 @@ export default class ZapPets3DGame extends BaseGame {
       this.enemies.forEach(e => {
         const d = Math.hypot(e.x - this.player.x, e.z - this.player.z);
         if (d <= novaRadius) {
-          const angle = Math.atan2(e.z - this.player.z, e.x - this.player.x);
-          e.hp -= 75;
-          e.x += Math.cos(angle) * 6;
-          e.z += Math.sin(angle) * 6;
+          e.hp -= 90;
+          const pushAngle = Math.atan2(e.x - this.player.x, e.z - this.player.z);
+          e.x += Math.sin(pushAngle) * 6;
+          e.z += Math.cos(pushAngle) * 6;
           if (e.hp <= 0 && !e.dead) this.handleEnemyDefeated(e);
         }
       });
       this.spawnShockwaveEffect(novaRadius, 0xfbbf24);
     } else if (char.id === 'bear') {
       this.player.shieldActive = true;
-      this.player.shieldDuration = 3.5;
+      this.player.shieldDuration = 4.0;
       this.audio.playVictory();
     } else if (char.id === 'bunny') {
       this.audio.playExplosion();
@@ -656,7 +922,7 @@ export default class ZapPets3DGame extends BaseGame {
       this.enemies.forEach(e => {
         const d = Math.hypot(e.x - this.player.x, e.z - this.player.z);
         if (d <= stormRadius) {
-          e.hp -= 80;
+          e.hp -= 85;
           e.speed = Math.max(1, e.speed * 0.3);
           if (e.hp <= 0 && !e.dead) this.handleEnemyDefeated(e);
         }
@@ -665,9 +931,25 @@ export default class ZapPets3DGame extends BaseGame {
     }
   }
 
+  spawn3DShockTrail() {
+    for (let i = 0; i < 8; i++) {
+      const g = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0xfde047 })
+      );
+      g.position.set(
+        this.player.x + (Math.random() - 0.5) * 2,
+        0.5,
+        this.player.z + (Math.random() - 0.5) * 2
+      );
+      this.scene.add(g);
+      this.particles.push({ mesh: g, life: 0.6, maxLife: 0.6 });
+    }
+  }
+
   spawnShockwaveEffect(radius, colorHex) {
-    const ringGeo = new THREE.RingGeometry(0.5, radius, 32);
-    const ringMat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+    const ringGeo = new THREE.RingGeometry(0.5, 1.2, 24);
+    const ringMat = new THREE.MeshBasicMaterial({ color: colorHex, side: THREE.DoubleSide });
     const ring = new THREE.Mesh(ringGeo, ringMat);
     ring.rotation.x = -Math.PI / 2;
     ring.position.set(this.player.x, 0.2, this.player.z);
@@ -675,233 +957,271 @@ export default class ZapPets3DGame extends BaseGame {
 
     this.particles.push({
       mesh: ring,
-      life: 0.4,
-      maxLife: 0.4,
-      scaleSpeed: 1.5
+      life: 0.5,
+      maxLife: 0.5,
+      update: (dt, p) => {
+        const scale = ((p.maxLife - p.life) / p.maxLife) * radius;
+        p.mesh.scale.set(scale, scale, 1);
+      }
     });
   }
 
-  spawn3DShockTrail() {
-    for (let i = 0; i < 8; i++) {
-      const geo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-      const mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-      const p = new THREE.Mesh(geo, mat);
-      p.position.set(this.player.x + (Math.random() - 0.5) * 2, 0.6, this.player.z + (Math.random() - 0.5) * 2);
-      this.scene.add(p);
-      this.particles.push({
-        mesh: p,
-        life: 0.35,
-        maxLife: 0.35
-      });
-    }
+  spawnIceDecoyTrap() {
+    const trapGeo = new THREE.CylinderGeometry(0.8, 1.1, 1.6, 6);
+    const trapMat = new THREE.MeshStandardMaterial({
+      color: 0x93c5fd,
+      roughness: 0.2,
+      metalness: 0.8
+    });
+    const trapMesh = new THREE.Mesh(trapGeo, trapMat);
+    trapMesh.position.set(this.player.x, 0.8, this.player.z);
+    this.scene.add(trapMesh);
+
+    this.particles.push({
+      mesh: trapMesh,
+      life: 3.5,
+      maxLife: 3.5,
+      update: (dt, p) => {
+        this.enemies.forEach(e => {
+          if (Math.hypot(e.x - p.mesh.position.x, e.z - p.mesh.position.z) <= 6.0) {
+            e.speed = Math.max(1, e.speed * 0.4);
+            e.hp -= 30 * dt;
+            if (e.hp <= 0 && !e.dead) this.handleEnemyDefeated(e);
+          }
+        });
+      }
+    });
   }
 
   spawnEnemy() {
     const angle = Math.random() * Math.PI * 2;
-    const distance = 35 + Math.random() * 15;
-    const x = Math.max(-this.arenaSize / 2 + 5, Math.min(this.arenaSize / 2 - 5, this.player.x + Math.sin(angle) * distance));
-    const z = Math.max(-this.arenaSize / 2 + 5, Math.min(this.arenaSize / 2 - 5, this.player.z + Math.cos(angle) * distance));
+    const spawnDist = 32 + Math.random() * 8;
+    const ex = this.player.x + Math.cos(angle) * spawnDist;
+    const ez = this.player.z + Math.sin(angle) * spawnDist;
 
-    const rand = Math.random();
-    let type = 'minion';
-    let hp = 30 + this.wave * 10;
-    let speed = 7.5 + Math.random() * 2;
-    let colorHex = 0xf43f5e;
-    let radius = 1.0;
-    let points = 10;
+    const isBoss = (this.wave % 5 === 0) && (this.waveDefeated === 0) && !this.currentBoss;
+    const isFast = !isBoss && Math.random() < 0.28;
+    const isTank = !isBoss && !isFast && Math.random() < 0.22;
 
-    if (rand < 0.25) {
-      type = 'stalker';
-      hp = 20 + this.wave * 5;
-      speed = 13.0;
-      colorHex = 0xa855f7;
-      radius = 0.8;
-      points = 15;
-    } else if (rand < 0.45 && this.wave >= 2) {
-      type = 'shooter';
-      hp = 50 + this.wave * 12;
-      speed = 5.5;
-      colorHex = 0xeab308;
-      radius = 1.1;
-      points = 20;
-    }
-
-    const enemyGeo = type === 'stalker' ? new THREE.ConeGeometry(radius, 1.8, 5) : new THREE.BoxGeometry(radius * 1.8, radius * 1.8, radius * 1.8);
-    const enemyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.5, flatShading: true });
-    const mesh = new THREE.Mesh(enemyGeo, enemyMat);
-    mesh.position.set(x, 1.0, z);
-    mesh.castShadow = true;
-    this.scene.add(mesh);
-
-    this.enemies.push({
-      mesh,
-      x,
-      z,
-      type,
-      radius,
-      hp,
-      maxHp: hp,
-      speed,
-      points,
-      shootTimer: 1.8 + Math.random()
-    });
-  }
-
-  spawnBoss() {
-    const angle = Math.random() * Math.PI * 2;
-    const x = this.player.x + Math.sin(angle) * 35;
-    const z = this.player.z + Math.cos(angle) * 35;
-
-    const hp = 700 + this.wave * 250;
-    const radius = 2.8;
-
-    const bossGeo = new THREE.BoxGeometry(radius * 2, radius * 2.5, radius * 2);
-    const bossMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.4, flatShading: true });
-    const mesh = new THREE.Mesh(bossGeo, bossMat);
-    mesh.position.set(x, radius * 1.25, z);
-    mesh.castShadow = true;
-    this.scene.add(mesh);
-
-    this.currentBoss = {
-      mesh,
-      x,
-      z,
-      type: 'boss',
-      radius,
-      hp,
-      maxHp: hp,
-      speed: 5.5,
-      points: 250,
-      shootTimer: 2.0
+    const enemy = {
+      x: ex,
+      z: ez,
+      type: isBoss ? 'boss' : (isFast ? 'fast' : (isTank ? 'tank' : 'normal')),
+      radius: isBoss ? 2.8 : (isTank ? 1.5 : (isFast ? 0.8 : 1.1)),
+      hp: isBoss ? (350 + this.wave * 120) : (isTank ? 85 : (isFast ? 32 : 50)),
+      maxHp: isBoss ? (350 + this.wave * 120) : (isTank ? 85 : (isFast ? 32 : 50)),
+      speed: isBoss ? 5.5 : (isFast ? 10.5 : (isTank ? 5.8 : 7.2)),
+      points: isBoss ? 500 : (isTank ? 60 : 35),
+      coins: isBoss ? 20 : (isTank ? 3 : 1),
+      bobOffset: Math.random() * Math.PI * 2,
+      dead: false
     };
-    this.enemies.push(this.currentBoss);
-    this.audio.playExplosion();
+
+    // Build Cute Floating Ghost 3D Mesh
+    const ghostGroup = new THREE.Group();
+    const ghostScale = isBoss ? 2.8 : (isTank ? 1.4 : (isFast ? 0.85 : 1.05));
+
+    // Dome / Capsule Body (Smooth cartoon white)
+    const capGeo = new THREE.CapsuleGeometry(0.75 * ghostScale, 0.8 * ghostScale, 8, 16);
+    const capMat = new THREE.MeshLambertMaterial({
+      color: isBoss ? 0xffe4e6 : 0xffffff
+    });
+    const ghostBody = new THREE.Mesh(capGeo, capMat);
+    ghostBody.position.y = 1.0 * ghostScale;
+    ghostBody.castShadow = true;
+    ghostGroup.add(ghostBody);
+
+    // Cute Ghost Face Plane
+    const faceGeo = new THREE.PlaneGeometry(0.9 * ghostScale, 0.9 * ghostScale);
+    const faceMat = new THREE.MeshBasicMaterial({
+      map: this.ghostFaceTexture,
+      transparent: true
+    });
+    const faceMesh = new THREE.Mesh(faceGeo, faceMat);
+    faceMesh.position.set(0, 1.05 * ghostScale, 0.78 * ghostScale);
+    ghostGroup.add(faceMesh);
+
+    // Two Cute Forward Ghost Arms
+    const handGeo = new THREE.SphereGeometry(0.22 * ghostScale, 8, 8);
+    const handL = new THREE.Mesh(handGeo, capMat);
+    handL.position.set(-0.65 * ghostScale, 0.8 * ghostScale, 0.35 * ghostScale);
+    ghostGroup.add(handL);
+
+    const handR = new THREE.Mesh(handGeo, capMat);
+    handR.position.set(0.65 * ghostScale, 0.8 * ghostScale, 0.35 * ghostScale);
+    ghostGroup.add(handR);
+
+    // Cute Soft Ground Drop Shadow
+    const shadowGeo = new THREE.CircleGeometry(0.7 * ghostScale, 16);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.25
+    });
+    const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
+    shadowMesh.rotation.x = -Math.PI / 2;
+    shadowMesh.position.y = 0.04;
+    ghostGroup.add(shadowMesh);
+
+    ghostGroup.position.set(ex, 0, ez);
+    this.scene.add(ghostGroup);
+
+    enemy.mesh = ghostGroup;
+    enemy.shadowMesh = shadowMesh;
+    this.enemies.push(enemy);
+
+    if (isBoss) {
+      this.currentBoss = enemy;
+      this.audio.playExplosion();
+    }
   }
 
   handleEnemyDefeated(enemy) {
+    if (enemy.dead) return;
     enemy.dead = true;
     this.emitScore(this.score + enemy.points);
 
+    this.player.coins += enemy.coins;
+    this.waveDefeated++;
+
+    // Remove 3D Mesh
     if (enemy.mesh) {
       this.scene.remove(enemy.mesh);
-      enemy.mesh.geometry.dispose();
-      enemy.mesh.material.dispose();
-    }
-
-    for (let i = 0; i < 6; i++) {
-      const pGeo = new THREE.BoxGeometry(0.35, 0.35, 0.35);
-      const pMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
-      const pMesh = new THREE.Mesh(pGeo, pMat);
-      pMesh.position.set(enemy.x, 1.0, enemy.z);
-      this.scene.add(pMesh);
-
-      const pAngle = Math.random() * Math.PI * 2;
-      this.particles.push({
-        mesh: pMesh,
-        vx: Math.cos(pAngle) * 8,
-        vy: 6 + Math.random() * 6,
-        vz: Math.sin(pAngle) * 8,
-        life: 0.45,
-        maxLife: 0.45
+      enemy.mesh.traverse(o => {
+        if (o.geometry) o.geometry.dispose();
+        if (o.material) o.material.dispose();
       });
     }
 
-    const gemGeo = new THREE.OctahedronGeometry(0.45, 0);
-    const gemMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    // Cute Cartoon Pop Effect (Golden stars & white puff)
+    for (let i = 0; i < 6; i++) {
+      const pGeo = new THREE.OctahedronGeometry(0.35, 0);
+      const pMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
+      const pMesh = new THREE.Mesh(pGeo, pMat);
+      pMesh.position.set(enemy.x, 1.2, enemy.z);
+      this.scene.add(pMesh);
+
+      const pAng = Math.random() * Math.PI * 2;
+      const pSpd = 3.5 + Math.random() * 4.5;
+      this.particles.push({
+        mesh: pMesh,
+        life: 0.5,
+        maxLife: 0.5,
+        vx: Math.cos(pAng) * pSpd,
+        vy: 4 + Math.random() * 4,
+        vz: Math.sin(pAng) * pSpd
+      });
+    }
+
+    // Drop Glowing Star Gem
+    const gemGeo = new THREE.OctahedronGeometry(0.42, 0);
+    const gemMat = new THREE.MeshBasicMaterial({ color: 0xfde047 });
     const gemMesh = new THREE.Mesh(gemGeo, gemMat);
-    gemMesh.position.set(enemy.x, 0.6, enemy.z);
+    gemMesh.position.set(enemy.x, 0.45, enemy.z);
     this.scene.add(gemMesh);
 
     this.items.push({
       mesh: gemMesh,
       x: enemy.x,
       z: enemy.z,
-      type: 'exp',
-      val: enemy.type === 'boss' ? 120 : (enemy.type === 'shooter' ? 30 : 15),
-      radius: 1.0
+      xp: 22,
+      collected: false
     });
+
+    // Check Wave Target
+    if (this.waveDefeated >= this.waveTarget) {
+      this.advanceWave();
+    }
   }
 
-  showLevelUpModal() {
-    this.pause();
+  advanceWave() {
+    this.wave++;
+    this.waveDefeated = 0;
+    this.waveTarget = 8 + (this.wave - 1) * 4;
+    this.currentBoss = null;
+    this.audio.playVictory();
+    this.triggerLevelUpSurge();
+  }
+
+  triggerLevelUpSurge() {
+    this.player.level++;
+    this.isPaused = true;
+    this.upgradeModal.style.display = 'flex';
+    this.audio.playPowerup();
 
     const perks = [
-      { id: 'multishot', title: 'Multishot Zap', icon: '🎯', desc: 'Add +1 plasma bolt per volley' },
-      { id: 'attackspeed', title: 'Overclock Drive', icon: '⚡', desc: '+25% faster attack firing rate' },
-      { id: 'damage', title: 'Heavy Plasma', icon: '💥', desc: '+35% projectile impact damage' },
-      { id: 'speed', title: 'Cyber Agility', icon: '👟', desc: '+20% faster movement speed' },
-      { id: 'shield', title: 'Thunder Orbs', icon: '🌀', desc: 'Add/Upgrade 3D orbiting barrier orbs' },
-      { id: 'crit', title: 'Critical Matrix', icon: '✨', desc: '+15% critical hit rate for 2x damage' },
-      { id: 'heal', title: 'Nano Medkit', icon: '❤️', desc: 'Instantly restore +50% of max health' }
+      { id: 'multishot', title: 'Multishot Surge', icon: '⚡', desc: 'Adds +1 piercing projectile per attack burst.' },
+      { id: 'magnet', title: 'Mega Magnet', icon: '🧲', desc: 'Pulls stars and gems from across the graveyard.' },
+      { id: 'speed', title: 'Swift Paws', icon: '🐾', desc: 'Increases hero run speed by +18%.' },
+      { id: 'damage', title: 'Spirit Fang', icon: '⚔️', desc: 'Increases projectile damage by +35%.' },
+      { id: 'orbs', title: 'Orbiting Orbs', icon: '🔮', desc: 'Summons protective magic orbs that crush ghosts.' },
+      { id: 'heal', title: 'Full Feast', icon: '🍗', desc: 'Restores 100% of maximum HP instantly.' }
     ];
 
-    const selected = [...perks].sort(() => Math.random() - 0.5).slice(0, 3);
+    const shuffled = [...perks].sort(() => 0.5 - Math.random()).slice(0, 3);
     this.cardsContainer.innerHTML = '';
-    selected.forEach(perk => {
+
+    shuffled.forEach(perk => {
       const card = document.createElement('div');
       card.style.cssText = `
-        background: linear-gradient(145deg, #1e1b4b, #0f172a);
-        border: 2px solid rgba(56,189,248,0.4);
+        background: #231b3e;
+        border: 2px solid rgba(253,224,71,0.5);
         border-radius: 14px;
-        padding: 16px 14px;
-        width: 180px;
+        padding: 18px 16px;
+        width: 190px;
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
         cursor: pointer;
         transition: transform 0.2s, border-color 0.2s;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+        box-shadow: 0 8px 22px rgba(0,0,0,0.6);
       `;
       card.innerHTML = `
-        <div style="font-size:2rem; margin-bottom:6px;">${perk.icon}</div>
-        <div style="font-family:var(--font-display); font-weight:800; font-size:0.95rem; color:#f8fafc; margin-bottom:4px;">${perk.title}</div>
-        <div style="font-size:0.75rem; color:#94a3b8; line-height:1.4;">${perk.desc}</div>
+        <div style="font-size:2.2rem; margin-bottom:8px;">${perk.icon}</div>
+        <div style="font-family:var(--font-display); font-weight:800; font-size:1rem; color:#fde047; margin-bottom:6px;">${perk.title}</div>
+        <div style="font-size:0.75rem; color:#e0e7ff; line-height:1.4;">${perk.desc}</div>
       `;
 
-      card.onmouseenter = () => { card.style.transform = 'translateY(-6px)'; card.style.borderColor = '#38bdf8'; };
-      card.onmouseleave = () => { card.style.transform = 'none'; card.style.borderColor = 'rgba(56,189,248,0.4)'; };
+      card.onmouseenter = () => {
+        card.style.transform = 'translateY(-6px) scale(1.04)';
+        card.style.borderColor = '#fde047';
+      };
+      card.onmouseleave = () => {
+        card.style.transform = 'translateY(0) scale(1)';
+        card.style.borderColor = 'rgba(253,224,71,0.5)';
+      };
 
       card.onclick = () => {
         this.applyPerk(perk.id);
         this.upgradeModal.style.display = 'none';
-        this.resume();
+        this.isPaused = false;
+        this.audio.playPowerup();
       };
+
       this.cardsContainer.appendChild(card);
     });
-
-    this.upgradeModal.style.display = 'flex';
   }
 
   applyPerk(perkId) {
-    this.audio.playCombo(3);
-    switch (perkId) {
-      case 'multishot':
-        this.player.multishot = Math.min(this.player.multishot + 1, 5);
-        break;
-      case 'attackspeed':
-        this.player.attackRate = Math.max(0.14, this.player.attackRate * 0.8);
-        break;
-      case 'damage':
-        this.player.bulletDamage = Math.round(this.player.bulletDamage * 1.35);
-        break;
-      case 'speed':
-        this.player.speedMultiplier += 0.2;
-        break;
-      case 'shield':
-        this.player.orbitingOrbs = Math.min(this.player.orbitingOrbs + 1, 4);
-        this.rebuildOrbitingOrbs3D();
-        break;
-      case 'crit':
-        this.player.critChance = Math.min(this.player.critChance + 0.15, 0.6);
-        break;
-      case 'heal':
-        this.player.hp = Math.min(this.player.maxHp, this.player.hp + this.player.maxHp * 0.5);
-        break;
+    if (perkId === 'multishot') {
+      this.player.multishot = Math.min(5, this.player.multishot + 1);
+    } else if (perkId === 'magnet') {
+      this.player.magnetRadius += 16;
+    } else if (perkId === 'speed') {
+      this.player.speedMultiplier *= 1.18;
+    } else if (perkId === 'damage') {
+      this.player.bulletDamage = Math.round(this.player.bulletDamage * 1.35);
+    } else if (perkId === 'orbs') {
+      this.player.orbitingOrbs++;
+      this.rebuildOrbitingOrbs();
+    } else if (perkId === 'heal') {
+      this.player.hp = this.player.maxHp;
     }
+    this.updateHUD();
   }
 
-  rebuildOrbitingOrbs3D() {
+  rebuildOrbitingOrbs() {
     this.orbitingMeshList.forEach(m => {
       this.scene.remove(m);
       m.geometry.dispose();
@@ -910,7 +1230,8 @@ export default class ZapPets3DGame extends BaseGame {
     this.orbitingMeshList = [];
 
     const orbGeo = new THREE.SphereGeometry(0.4, 8, 8);
-    const orbMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const orbMat = new THREE.MeshBasicMaterial({ color: 0xa855f7 });
+
     for (let i = 0; i < this.player.orbitingOrbs; i++) {
       const mesh = new THREE.Mesh(orbGeo, orbMat);
       this.scene.add(mesh);
@@ -918,14 +1239,9 @@ export default class ZapPets3DGame extends BaseGame {
     }
   }
 
-  clampPlayerPosition() {
-    const half = this.arenaSize / 2 - 2;
-    this.player.x = Math.max(-half, Math.min(half, this.player.x));
-    this.player.z = Math.max(-half, Math.min(half, this.player.z));
-  }
-
   update(dt) {
     if (!this.playerGroup || !this.player) return;
+    this.time += dt;
 
     // Cooldown timers
     if (this.player.s1Cd > 0) this.player.s1Cd = Math.max(0, this.player.s1Cd - dt);
@@ -942,103 +1258,104 @@ export default class ZapPets3DGame extends BaseGame {
       if (this.player.shieldDuration <= 0) this.player.shieldActive = false;
     }
 
-    // Movement Input
+    // 1. Movement Handling
     let mx = 0, mz = 0;
     if (this.keys['w'] || this.keys['arrowup']) mz -= 1;
     if (this.keys['s'] || this.keys['arrowdown']) mz += 1;
     if (this.keys['a'] || this.keys['arrowleft']) mx -= 1;
     if (this.keys['d'] || this.keys['arrowright']) mx += 1;
 
-    if (this.touchDir && (this.touchDir.x !== 0 || this.touchDir.y !== 0)) {
+    if (this.touchDir && (this.touchDir.x || this.touchDir.y)) {
       mx = this.touchDir.x;
       mz = this.touchDir.y;
     }
 
     const moveLen = Math.hypot(mx, mz);
-    if (moveLen > 0) {
+    const isMoving = moveLen > 0.05;
+
+    if (isMoving) {
       const normX = mx / moveLen;
       const normZ = mz / moveLen;
-      const curSpeed = (this.player.isDashing ? this.player.baseSpeed * 2.2 : this.player.baseSpeed) * this.player.speedMultiplier;
-      this.player.x += normX * curSpeed * dt;
-      this.player.z += normZ * curSpeed * dt;
+      const speed = this.player.baseSpeed * this.player.speedMultiplier * (this.player.isDashing ? 2.4 : 1.0);
 
+      this.player.x += normX * speed * dt;
+      this.player.z += normZ * speed * dt;
       this.player.facingAngle = Math.atan2(normX, normZ);
+
       this.clampPlayerPosition();
 
-      // Bobbing animation 3D
-      this.playerGroup.position.y = Math.abs(Math.sin(Date.now() / 90)) * 0.35;
+      // Running Bob Animation
+      this.playerGroup.rotation.y = this.player.facingAngle;
+      this.playerGroup.position.set(this.player.x, Math.sin(this.time * 14) * 0.12, this.player.z);
     } else {
-      this.playerGroup.position.y = 0;
+      this.playerGroup.position.set(this.player.x, 0, this.player.z);
     }
 
-    // Update 3D Player position and rotation
-    this.playerGroup.position.x = this.player.x;
-    this.playerGroup.position.z = this.player.z;
-    this.playerGroup.rotation.y = this.player.facingAngle;
-
-    // Camera follow (Smooth Lerp)
+    // 2. Camera Smooth Follow (Isometric)
     const targetCamX = this.player.x;
-    const targetCamY = 24;
-    const targetCamZ = this.player.z + 18;
-    this.camera.position.x += (targetCamX - this.camera.position.x) * 6 * dt;
-    this.camera.position.y += (targetCamY - this.camera.position.y) * 6 * dt;
-    this.camera.position.z += (targetCamZ - this.camera.position.z) * 6 * dt;
-    this.camera.lookAt(this.player.x, 0.5, this.player.z);
+    const targetCamZ = this.player.z + 26;
+    this.camera.position.x += (targetCamX - this.camera.position.x) * 0.1;
+    this.camera.position.z += (targetCamZ - this.camera.position.z) * 0.1;
+    this.camera.lookAt(this.player.x, 0, this.player.z);
 
-    // Orbiting Orbs 3D
-    if (this.player.orbitingOrbs > 0) {
-      const orbAngleSpeed = Date.now() / 350;
-      const orbDist = 3.6;
+    // 3. Orbiting Orbs
+    if (this.orbitingMeshList.length > 0) {
+      const orbDist = 3.2;
       this.orbitingMeshList.forEach((mesh, idx) => {
-        const a = orbAngleSpeed + (idx * Math.PI * 2) / this.player.orbitingOrbs;
+        const a = this.time * 3 + (idx * Math.PI * 2) / this.orbitingMeshList.length;
         const ox = this.player.x + Math.sin(a) * orbDist;
         const oz = this.player.z + Math.cos(a) * orbDist;
         mesh.position.set(ox, 1.2, oz);
 
         this.enemies.forEach(e => {
           if (Math.hypot(e.x - ox, e.z - oz) <= e.radius + 0.6) {
-            e.hp -= 40 * dt;
+            e.hp -= 45 * dt;
             if (e.hp <= 0 && !e.dead) this.handleEnemyDefeated(e);
           }
         });
       });
     }
 
-    // Auto-Targeting & Shooting
+    // 4. Auto-Shoot Projectiles toward Nearest Ghost
     this.player.shootTimer += dt;
     if (this.player.shootTimer >= this.player.attackRate) {
+      this.player.shootTimer = 0;
       let nearest = null;
-      let minDist = this.player.bulletRange;
-      for (const e of this.enemies) {
+      let minD = this.player.bulletRange;
+
+      this.enemies.forEach(e => {
         const d = Math.hypot(e.x - this.player.x, e.z - this.player.z);
-        if (d < minDist) {
-          minDist = d;
+        if (d < minD) {
+          minD = d;
           nearest = e;
         }
-      }
+      });
+
       if (nearest) {
-        this.player.shootTimer = 0;
         this.fireProjectiles3D(nearest);
       }
     }
 
-    // Update Projectiles 3D
+    // 5. Update Projectiles
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.x += p.vx * dt;
       p.z += p.vz * dt;
       p.dist += p.speed * dt;
-      p.mesh.position.set(p.x, 1.0, p.z);
+      p.mesh.position.set(p.x, 1.1, p.z);
 
       let hit = false;
       for (const e of this.enemies) {
-        if (Math.hypot(p.x - e.x, p.z - e.z) <= e.radius + 0.4) {
+        if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) <= e.radius + 0.5) {
           hit = true;
-          const isCrit = Math.random() < this.player.critChance;
-          const finalDmg = isCrit ? p.damage * 2 : p.damage;
-          e.hp -= finalDmg;
-          this.audio.playHit();
-          if (e.hp <= 0 && !e.dead) this.handleEnemyDefeated(e);
+          let isCrit = Math.random() < this.player.critChance;
+          let dmg = isCrit ? Math.round(p.damage * 2.2) : p.damage;
+          e.hp -= dmg;
+          this.audio.playExplosion();
+
+          if (e.hp <= 0) {
+            this.handleEnemyDefeated(e);
+          }
           break;
         }
       }
@@ -1051,91 +1368,95 @@ export default class ZapPets3DGame extends BaseGame {
       }
     }
 
-    // Update Enemies 3D
-    for (let i = this.enemies.length - 1; i >= 0; i--) {
-      const e = this.enemies[i];
-      if (e.dead) {
-        this.enemies.splice(i, 1);
-        continue;
-      }
-
-      if (e.frozenTimer > 0) {
-        e.frozenTimer -= dt;
-        continue;
-      }
-
+    // 6. Update Ghosts
+    this.enemies.forEach(e => {
+      if (e.dead) return;
       const dx = this.player.x - e.x;
       const dz = this.player.z - e.z;
       const dist = Math.hypot(dx, dz);
 
-      if (dist > 0) {
+      if (dist > 0.1) {
         const nx = dx / dist;
         const nz = dz / dist;
         e.x += nx * e.speed * dt;
         e.z += nz * e.speed * dt;
-        e.mesh.position.set(e.x, e.type === 'boss' ? 3.0 : 1.0, e.z);
+
+        // Floating Bobbing Animation
+        const bob = Math.sin(this.time * 3.5 + e.bobOffset) * 0.18;
+        e.mesh.position.set(e.x, 0.4 + bob, e.z);
         e.mesh.rotation.y = Math.atan2(nx, nz);
+
+        // Adjust shadow scale with height
+        if (e.shadowMesh) {
+          const s = 1.0 - bob * 0.4;
+          e.shadowMesh.scale.set(s, s, 1);
+        }
       }
 
+      // Damage player on contact
       if (dist <= this.player.radius + e.radius) {
         if (this.player.invulnerableTimer <= 0) {
-          let dmg = e.type === 'boss' ? 30 : 12;
-          if (this.player.shieldActive) dmg = Math.round(dmg * 0.1);
+          let dmg = e.type === 'boss' ? 32 : 14;
+          if (this.player.shieldActive) dmg *= 0.1;
 
           this.player.hp -= dmg;
-          this.player.invulnerableTimer = 0.5;
+          this.player.invulnerableTimer = 0.55;
           this.audio.playHit();
 
           if (this.player.hp <= 0) {
-            this.emitGameOver();
-            return;
+            this.player.hp = 0;
+            this.gameOver();
           }
         }
       }
-    }
+    });
 
-    // Items Vacuum and Pickup
+    // Clean up dead enemies from array
+    this.enemies = this.enemies.filter(e => !e.dead);
+
+    // 7. Magnet & Collect Items
     for (let i = this.items.length - 1; i >= 0; i--) {
       const it = this.items[i];
       const d = Math.hypot(it.x - this.player.x, it.z - this.player.z);
 
-      if (d < this.player.magnetRadius) {
-        const pull = 22 * dt;
-        it.x += ((this.player.x - it.x) / d) * pull;
-        it.z += ((this.player.z - it.z) / d) * pull;
-        it.mesh.position.set(it.x, 0.6, it.z);
+      if (d <= this.player.magnetRadius) {
+        const pullSpd = 20 * dt;
+        it.x += ((this.player.x - it.x) / d) * pullSpd;
+        it.z += ((this.player.z - it.z) / d) * pullSpd;
+        it.mesh.position.set(it.x, 0.45, it.z);
       }
 
-      if (d <= this.player.radius + it.radius) {
-        this.player.xp += it.val;
-        this.audio.playScore();
+      if (d <= this.player.radius + 0.8) {
         this.scene.remove(it.mesh);
         it.mesh.geometry.dispose();
         it.mesh.material.dispose();
         this.items.splice(i, 1);
 
+        this.player.xp += it.xp;
+        this.emitScore(this.score + 15);
+        this.audio.playPowerup();
+
         if (this.player.xp >= this.player.xpNeeded) {
           this.player.xp -= this.player.xpNeeded;
-          this.player.level++;
           this.player.xpNeeded = Math.round(this.player.xpNeeded * 1.35);
-          this.showLevelUpModal();
+          this.triggerLevelUpSurge();
         }
       }
     }
 
-    // Particles 3D Update
+    // 8. Update Particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.life -= dt;
-      if (p.mesh && p.mesh.material && p.mesh.material.opacity) {
-        p.mesh.material.opacity = Math.max(0, p.life / p.maxLife);
-      }
+      if (p.update) p.update(dt, p);
+
       if (p.vy) {
-        p.vy -= 18 * dt;
+        p.vy -= 16 * dt;
         p.mesh.position.y += p.vy * dt;
         p.mesh.position.x += p.vx * dt;
         p.mesh.position.z += p.vz * dt;
       }
+
       if (p.life <= 0) {
         this.scene.remove(p.mesh);
         p.mesh.geometry.dispose();
@@ -1144,23 +1465,11 @@ export default class ZapPets3DGame extends BaseGame {
       }
     }
 
-    // Waves Spawning
-    this.waveTimeLeft -= dt;
-    if (this.waveTimeLeft <= 0) {
-      this.wave++;
-      this.waveTimeLeft = 30;
-      this.spawnInterval = Math.max(0.4, 1.0 - this.wave * 0.08);
-      this.audio.playVictory();
-
-      if (this.wave === 3 || this.wave % 5 === 0) {
-        this.spawnBoss();
-      }
-    }
-
+    // 9. Spawn Timer
     this.spawnTimer += dt;
     if (this.spawnTimer >= this.spawnInterval) {
       this.spawnTimer = 0;
-      if (this.enemies.length < 45) {
+      if (this.enemies.length < 40) {
         this.spawnEnemy();
       }
     }
@@ -1171,8 +1480,6 @@ export default class ZapPets3DGame extends BaseGame {
     if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera);
     }
-
-    this.renderMinimap();
   }
 
   fireProjectiles3D(target) {
@@ -1181,13 +1488,13 @@ export default class ZapPets3DGame extends BaseGame {
     const spread = 0.16;
     const startAngle = angle - ((count - 1) * spread) / 2;
 
-    const boltGeo = new THREE.SphereGeometry(0.35, 6, 6);
+    const boltGeo = new THREE.SphereGeometry(0.38, 8, 8);
     const boltMat = new THREE.MeshBasicMaterial({ color: this.charConfig.bulletColor });
 
     for (let i = 0; i < count; i++) {
       const bAngle = startAngle + i * spread;
       const mesh = new THREE.Mesh(boltGeo, boltMat);
-      mesh.position.set(this.player.x, 1.0, this.player.z);
+      mesh.position.set(this.player.x, 1.1, this.player.z);
       this.scene.add(mesh);
 
       this.projectiles.push({
@@ -1205,60 +1512,62 @@ export default class ZapPets3DGame extends BaseGame {
     this.audio.playJump();
   }
 
-  renderMinimap() {
-    this.minimapCtx.clearRect(0, 0, 75, 75);
-    const scale = 75 / this.arenaSize;
-    const offset = 37.5;
-
-    this.minimapCtx.strokeStyle = 'rgba(255,255,255,0.2)';
-    this.minimapCtx.strokeRect(0, 0, 75, 75);
-
-    this.minimapCtx.fillStyle = '#ef4444';
-    this.enemies.forEach(e => {
-      this.minimapCtx.fillRect(offset + e.x * scale - 1, offset + e.z * scale - 1, e.type === 'boss' ? 4 : 2, e.type === 'boss' ? 4 : 2);
-    });
-
-    this.minimapCtx.fillStyle = '#eab308';
-    this.minimapCtx.beginPath();
-    this.minimapCtx.arc(offset + this.player.x * scale, offset + this.player.z * scale, 2.5, 0, Math.PI * 2);
-    this.minimapCtx.fill();
+  clampPlayerPosition() {
+    const limit = this.arenaSize / 2 - 2;
+    this.player.x = Math.max(-limit, Math.min(limit, this.player.x));
+    this.player.z = Math.max(-limit, Math.min(limit, this.player.z));
   }
 
   updateHUD() {
-    if (this.levelBadge && this.player) this.levelBadge.textContent = `LV ${this.player.level}`;
-    if (this.coinsText && this.player) this.coinsText.textContent = `🪙 ${this.player.coins}`;
+    if (!this.player) return;
+
+    if (this.coinsText) this.coinsText.textContent = this.player.coins;
+    if (this.levelBadge) this.levelBadge.textContent = this.player.level;
     if (this.waveNumEl) this.waveNumEl.textContent = this.wave;
-    if (this.waveTimerEl) this.waveTimerEl.textContent = Math.ceil(this.waveTimeLeft);
 
-    if (this.player) {
-      const expPercent = Math.min(100, (this.player.xp / this.player.xpNeeded) * 100);
-      if (this.expFill) this.expFill.style.width = `${expPercent}%`;
+    if (this.waveProgressFill) {
+      const pct = Math.min(100, (this.waveDefeated / this.waveTarget) * 100);
+      this.waveProgressFill.style.width = `${pct}%`;
+    }
+    if (this.waveTargetText) {
+      this.waveTargetText.textContent = `${this.waveDefeated}/${this.waveTarget}`;
+    }
 
-      if (this.s1CdEl) {
-        if (this.player.s1Cd > 0) {
-          this.s1CdEl.style.display = 'flex';
-          this.s1CdEl.textContent = this.player.s1Cd.toFixed(1);
-        } else {
-          this.s1CdEl.style.display = 'none';
-        }
-      }
+    // 3D Floating Player HP Bar
+    if (this.floatingHud && this.camera && this.renderer) {
+      const pos = new THREE.Vector3(this.player.x, 2.4, this.player.z);
+      pos.project(this.camera);
 
-      if (this.s2CdEl) {
-        if (this.player.s2Cd > 0) {
-          this.s2CdEl.style.display = 'flex';
-          this.s2CdEl.textContent = this.player.s2Cd.toFixed(1);
-        } else {
-          this.s2CdEl.style.display = 'none';
-        }
+      const width = this.webglContainer.clientWidth;
+      const height = this.webglContainer.clientHeight;
+      const sx = (pos.x * 0.5 + 0.5) * width;
+      const sy = (-(pos.y * 0.5) + 0.5) * height;
+
+      this.floatingHud.style.left = `${sx}px`;
+      this.floatingHud.style.top = `${sy}px`;
+
+      const hpPercent = Math.max(0, (this.player.hp / this.player.maxHp) * 100);
+      this.floatingHpFill.style.width = `${hpPercent}%`;
+      this.floatingHpText.textContent = Math.ceil(this.player.hp);
+    }
+
+    // Skill cooldown overlays
+    if (this.s1CdEl) {
+      if (this.player.s1Cd > 0) {
+        this.s1CdEl.style.display = 'flex';
+        this.s1CdEl.textContent = this.player.s1Cd.toFixed(1);
+      } else {
+        this.s1CdEl.style.display = 'none';
       }
     }
 
-    if (this.currentBoss && this.currentBoss.hp > 0) {
-      this.bossBar.style.display = 'flex';
-      const pct = Math.max(0, (this.currentBoss.hp / this.currentBoss.maxHp) * 100);
-      this.bossFill.style.width = `${pct}%`;
-    } else {
-      this.bossBar.style.display = 'none';
+    if (this.s2CdEl) {
+      if (this.player.s2Cd > 0) {
+        this.s2CdEl.style.display = 'flex';
+        this.s2CdEl.textContent = this.player.s2Cd.toFixed(1);
+      } else {
+        this.s2CdEl.style.display = 'none';
+      }
     }
   }
 
@@ -1306,5 +1615,6 @@ export default class ZapPets3DGame extends BaseGame {
 
     this.camera = null;
     this.playerGroup = null;
+    this.ghostFaceTexture = null;
   }
 }
