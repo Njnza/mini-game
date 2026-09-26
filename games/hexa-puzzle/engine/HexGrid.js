@@ -199,18 +199,14 @@ export class HexGrid {
     let newElement = element;
 
     // Special Tier 4 Transformation:
-    // If Arcane reaches Tier 4 -> Becomes Prism Star!
-    if (element === 'arcane' && newTier >= 4) {
+    // Any element reaching Tier 4 (merging 3 Tier 3s) -> Becomes a Prism Star!
+    if (newTier >= 4) {
       newElement = 'prism';
       newTier = 4;
-      totalScore += 500;
+      totalScore += 600;
       if (fxManager) {
         fxManager.addFloatingText('💎 NGỌC CẦU VỒNG PRISM!', originCell.x, originCell.y - 30, '#ec4899', 22);
       }
-    } else if (newTier > 4) {
-      // Nova burst!
-      newTier = 4;
-      totalScore += 300;
     }
 
     originCell.rune = { element: newElement, tier: newTier };

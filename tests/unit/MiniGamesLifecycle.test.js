@@ -149,10 +149,11 @@ export async function runMiniGamesLifecycleTests() {
         assert.doesNotThrow(() => game.attemptPlacePiece(piece, 0, 0, 0), 'Attempt place piece must not throw');
       }
 
-      // 3. Test Undo and Hammer
+      // 3. Test Undo, Hammer, and Reroll
       assert.doesNotThrow(() => game.undoMove(), 'Undo move must not throw');
       assert.doesNotThrow(() => game.toggleHammerMode(), 'Toggle hammer mode must not throw');
       game.toggleHammerMode(); // Turn off
+      assert.doesNotThrow(() => game.triggerReroll(), 'Trigger reroll must not throw');
 
       // 4. Test Level Loading
       assert.doesNotThrow(() => game.loadLevel(2), 'Load level 2 must not throw');

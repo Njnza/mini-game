@@ -137,11 +137,14 @@ export default class HexaPuzzleGame extends BaseGame {
         <div style="width:100%; max-width:840px; display:flex; justify-content:space-between; align-items:center; padding:8px 16px; background:rgba(18,12,38,0.9); border-top:1px solid rgba(139,92,246,0.3); z-index:20;">
           <!-- Tools: Undo, Hammer, Rotate -->
           <div style="display:flex; align-items:center; gap:8px;">
-            <button id="hp-btn-undo" title="Hoàn tác lượt đi vừa rồi" style="background:#1e1442; border:1px solid rgba(255,255,255,0.15); color:#cbd5e1; border-radius:8px; padding:6px 12px; font-weight:700; font-size:0.8rem; cursor:pointer;">
+            <button id="hp-btn-undo" title="Hoàn tác lượt đi vừa rồi (U)" style="background:#1e1442; border:1px solid rgba(255,255,255,0.15); color:#cbd5e1; border-radius:8px; padding:6px 12px; font-weight:700; font-size:0.8rem; cursor:pointer;">
               ↩️ Hoàn Tác
             </button>
-            <button id="hp-btn-hammer" title="Búa ma thuật: Đập vỡ 1 ô bất kỳ" style="background:#78350f; border:1px solid #f59e0b; color:#fbbf24; border-radius:8px; padding:6px 12px; font-weight:700; font-size:0.8rem; cursor:pointer;">
-              🔨 Búa (<span id="hp-hammer-count">2</span>)
+            <button id="hp-btn-hammer" title="Búa ma thuật: Đập vỡ 1 ô bất kỳ (H)" style="background:#78350f; border:1px solid #f59e0b; color:#fbbf24; border-radius:8px; padding:6px 12px; font-weight:700; font-size:0.8rem; cursor:pointer;">
+              🔨 Búa (<span id="hp-hammer-count">3</span>)
+            </button>
+            <button id="hp-btn-reroll" title="Đổi bộ 3 khối mới thông minh (R)" style="background:#065f46; border:1px solid #10b981; color:#34d399; border-radius:8px; padding:6px 12px; font-weight:700; font-size:0.8rem; cursor:pointer;">
+              🔀 Đổi Khối (<span id="hp-reroll-count">3</span>)
             </button>
             <button id="hp-btn-rotate" title="Xoay khối đôi đang chọn (Space)" style="background:#311b92; border:1px solid #7c3aed; color:#c4b5fd; border-radius:8px; padding:6px 12px; font-weight:700; font-size:0.8rem; cursor:pointer;">
               🔄 Xoay
@@ -150,9 +153,8 @@ export default class HexaPuzzleGame extends BaseGame {
 
           <!-- Waiting Pieces Slots Indicator -->
           <div id="hp-piece-slots" style="display:flex; align-items:center; gap:14px;">
-            <!-- Rendered onto canvas or interactive buttons -->
             <div style="font-size:0.8rem; color:#94a3b8; font-style:italic;">
-              Click ô để chọn khối | Nhấn Space để xoay
+              Click ô để chọn khối | Phím R: Đổi khối | Space: Xoay
             </div>
           </div>
         </div>
@@ -170,6 +172,7 @@ export default class HexaPuzzleGame extends BaseGame {
     this.objTextEl = this.container.querySelector('#hp-objective-text');
     this.objProgEl = this.container.querySelector('#hp-objective-progress');
     this.hammerCountEl = this.container.querySelector('#hp-hammer-count');
+    this.rerollCountEl = this.container.querySelector('#hp-reroll-count');
     this.levelsModal = this.container.querySelector('#hp-levels-modal');
     this.victoryModal = this.container.querySelector('#hp-victory-modal');
     this.defeatModal = this.container.querySelector('#hp-defeat-modal');
@@ -213,6 +216,7 @@ export default class HexaPuzzleGame extends BaseGame {
     this.score = 0;
     this.moveHistory = [];
     this.isHammerMode = false;
+    this.hammerCount = 3;
     this.selectedSlotIndex = null;
     this.hoverAxial = null;
 
@@ -231,9 +235,9 @@ export default class HexaPuzzleGame extends BaseGame {
       }
     }
 
-    // Generate new piece slots
+    // Generate new piece slots with objective bias & board pairing assist!
     this.pieceGen.reset();
-    this.pieceGen.generateSlotPieces(this.level.allowedElements);
+    this.pieceGen.generateSlotPieces(this.level.allowedElements, this.level.objective, this.grid);
     this.selectedSlotIndex = 0; // Auto-select first piece
 
     // Close modals
@@ -337,6 +341,8 @@ export default class HexaPuzzleGame extends BaseGame {
         this.undoMove();
       } else if (e.key === 'h' || e.key === 'H') {
         this.toggleHammerMode();
+      } else if (e.key === 'r' || e.key === 'R') {
+        this.triggerReroll();
       }
     };
     this.addTrackedEventListener(window, 'keydown', onKeyDown);
@@ -353,6 +359,9 @@ export default class HexaPuzzleGame extends BaseGame {
 
     const btnHammer = this.container.querySelector('#hp-btn-hammer');
     if (btnHammer) this.addTrackedEventListener(btnHammer, 'click', () => this.toggleHammerMode());
+
+    const btnReroll = this.container.querySelector('#hp-btn-reroll');
+    if (btnReroll) this.addTrackedEventListener(btnReroll, 'click', () => this.triggerReroll());
 
     const btnRotate = this.container.querySelector('#hp-btn-rotate');
     if (btnRotate) this.addTrackedEventListener(btnRotate, 'click', () => this.rotateSelectedPiece());
@@ -384,6 +393,18 @@ export default class HexaPuzzleGame extends BaseGame {
         this.synthAudio.playPlace();
       }
     }
+  }
+
+  triggerReroll() {
+    const success = this.pieceGen.rerollPieces(this.level.allowedElements, this.level.objective, this.grid);
+    if (!success) {
+      this.fx.addFloatingText('HẾT LƯỢT ĐỔI KHỐI!', 400, 300, '#ef4444', 18);
+      return;
+    }
+    this.synthAudio.playPlace();
+    this.selectedSlotIndex = 0;
+    this.fx.addFloatingText('ĐÃ ĐỔI 3 KHỐI MỚI! 🔀', 400, 280, '#34d399', 18);
+    this.updateHUD();
   }
 
   toggleHammerMode() {
@@ -480,9 +501,9 @@ export default class HexaPuzzleGame extends BaseGame {
     this.score += mergeScore + 10;
     this.emitScore(this.score);
 
-    // If all 3 slots empty, deal next set of 3 pieces!
+    // If all 3 slots empty, deal next set of 3 smart pieces!
     if (this.pieceGen.hasEmptySlots()) {
-      this.pieceGen.generateSlotPieces(this.level.allowedElements);
+      this.pieceGen.generateSlotPieces(this.level.allowedElements, this.level.objective, this.grid);
     }
 
     // Auto select next available piece
@@ -514,7 +535,9 @@ export default class HexaPuzzleGame extends BaseGame {
       movesLeft: this.movesLeft,
       score: this.score,
       slots: this.pieceGen.slots.map(s => s ? new Piece(s.id, [...s.runes], s.isDuo) : null),
-      selectedSlotIndex: this.selectedSlotIndex
+      selectedSlotIndex: this.selectedSlotIndex,
+      hammerCount: this.hammerCount,
+      rerollCount: this.pieceGen.rerollCount
     });
 
     if (this.moveHistory.length > 5) this.moveHistory.shift();
@@ -532,6 +555,8 @@ export default class HexaPuzzleGame extends BaseGame {
     this.score = prev.score;
     this.pieceGen.slots = prev.slots;
     this.selectedSlotIndex = prev.selectedSlotIndex;
+    if (prev.hammerCount !== undefined) this.hammerCount = prev.hammerCount;
+    if (prev.rerollCount !== undefined) this.pieceGen.rerollCount = prev.rerollCount;
 
     this.synthAudio.playPlace();
     this.fx.addFloatingText('ĐÃ HOÀN TÁC! ↩️', 400, 240, '#c4b5fd', 18);
@@ -639,6 +664,7 @@ export default class HexaPuzzleGame extends BaseGame {
     if (this.scoreEl) this.scoreEl.textContent = this.score;
     if (this.movesEl) this.movesEl.textContent = this.movesLeft;
     if (this.hammerCountEl) this.hammerCountEl.textContent = this.hammerCount;
+    if (this.rerollCountEl) this.rerollCountEl.textContent = this.pieceGen.rerollCount;
 
     if (this.objTextEl) this.objTextEl.textContent = this.level.objective.description;
 
