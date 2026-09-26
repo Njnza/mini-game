@@ -13,7 +13,7 @@ export function runGameRegistryTests() {
   console.log('✓ PASS: GameRegistry contains 8 mini-games');
 
   // Test 2: Check required metadata schema for every game
-  const expectedIds = ['target-hunter', 'neon-snake', 'cyber-flappy', 'brick-breaker', 'memory-matrix', 'zap-pets', 'tower-defense', 'trung-thu-chaos'];
+  const expectedIds = ['target-hunter', 'neon-snake', 'cyber-flappy', 'brick-breaker', 'memory-matrix', 'zap-pets', 'tower-defense', 'hexa-puzzle'];
   expectedIds.forEach(id => {
     const meta = registry.getMeta(id);
     assert.ok(meta, `Game metadata for '${id}' should exist`);

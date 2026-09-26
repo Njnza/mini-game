@@ -74,19 +74,14 @@ export async function runEndpointsTests() {
     '/games/tower-defense/engine/TowerManager.js',
     '/games/tower-defense/engine/HeroManager.js',
     '/games/tower-defense/engine/AbilityManager.js',
-    '/games/trung-thu-chaos/meta.js',
-    '/games/trung-thu-chaos/game.js',
-    '/games/trung-thu-chaos/data/skins.js',
-    '/games/trung-thu-chaos/data/enemies.js',
-    '/games/trung-thu-chaos/data/powerups.js',
-    '/games/trung-thu-chaos/data/dialogues.js',
-    '/games/trung-thu-chaos/audio/SynthAudio.js',
-    '/games/trung-thu-chaos/engine/FXManager.js',
-    '/games/trung-thu-chaos/engine/BackgroundRenderer.js',
-    '/games/trung-thu-chaos/engine/Player.js',
-    '/games/trung-thu-chaos/engine/MooncakeManager.js',
-    '/games/trung-thu-chaos/engine/ObstacleManager.js',
-    '/games/trung-thu-chaos/engine/BossManager.js'
+    '/games/hexa-puzzle/meta.js',
+    '/games/hexa-puzzle/game.js',
+    '/games/hexa-puzzle/data/elements.js',
+    '/games/hexa-puzzle/data/levels.js',
+    '/games/hexa-puzzle/audio/SynthAudio.js',
+    '/games/hexa-puzzle/engine/FXManager.js',
+    '/games/hexa-puzzle/engine/HexGrid.js',
+    '/games/hexa-puzzle/engine/PieceGenerator.js'
   ];
 
   try {

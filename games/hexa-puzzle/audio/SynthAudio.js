@@ -1,7 +1,7 @@
 /**
  * SynthAudio.js
- * Procedural Web Audio API sound effects for Mid-Autumn Festival theme.
- * Completely standalone, zero external assets required.
+ * Procedural Web Audio API sound synthesizer for puzzle actions.
+ * Zero external audio dependencies, fully resilient in headless test environments.
  */
 
 export class SynthAudio {
@@ -34,18 +34,69 @@ export class SynthAudio {
     this.muted = isMuted;
   }
 
-  playCatch() {
+  playPlace() {
     if (this.muted || !this.ctx) return;
     this.ensureContext();
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(587.33, now); // D5
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
 
     gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.08);
+  }
+
+  playMerge(comboCount = 1) {
+    if (this.muted || !this.ctx) return;
+    this.ensureContext();
+    const now = this.ctx.currentTime;
+    // Pentatonic scale escalation based on combo
+    const scale = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.5];
+    const baseIndex = Math.min((comboCount - 1) * 2, scale.length - 2);
+
+    const freq1 = scale[baseIndex];
+    const freq2 = scale[baseIndex + 1];
+
+    [freq1, freq2].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const startTime = now + idx * 0.05;
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0.25, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.22);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.22);
+    });
+  }
+
+  playIceShatter() {
+    if (this.muted || !this.ctx) return;
+    this.ensureContext();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(200, now + 0.15);
+
+    gain.gain.setValueAtTime(0.25, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
 
     osc.connect(gain);
@@ -55,43 +106,18 @@ export class SynthAudio {
     osc.stop(now + 0.15);
   }
 
-  playCombo() {
-    if (this.muted || !this.ctx) return;
-    this.ensureContext();
-    const now = this.ctx.currentTime;
-    const freqs = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6 arpeggio
-
-    freqs.forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      const startTime = now + idx * 0.04;
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, startTime);
-
-      gain.gain.setValueAtTime(0.18, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.12);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(startTime);
-      osc.stop(startTime + 0.12);
-    });
-  }
-
-  playStrike() {
+  playHammer() {
     if (this.muted || !this.ctx) return;
     this.ensureContext();
     const now = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(220, now);
-    osc.frequency.linearRampToValueAtTime(110, now + 0.22);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(160, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
 
-    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.setValueAtTime(0.35, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
 
     osc.connect(gain);
@@ -101,70 +127,53 @@ export class SynthAudio {
     osc.stop(now + 0.25);
   }
 
-  playDamage() {
+  playVictory() {
     if (this.muted || !this.ctx) return;
     this.ensureContext();
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
 
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(180, now);
-    osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
-
-    gain.gain.setValueAtTime(0.3, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + 0.3);
-  }
-
-  playPowerup() {
-    if (this.muted || !this.ctx) return;
-    this.ensureContext();
-    const now = this.ctx.currentTime;
-    const freqs = [440, 554.37, 659.25, 880];
-
-    freqs.forEach((freq, idx) => {
+    notes.forEach((freq, idx) => {
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      const startTime = now + idx * 0.06;
+      const startTime = now + idx * 0.1;
 
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(freq, startTime);
 
-      gain.gain.setValueAtTime(0.2, startTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.2);
+      gain.gain.setValueAtTime(0.28, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.35);
 
       osc.connect(gain);
       gain.connect(this.ctx.destination);
 
       osc.start(startTime);
-      osc.stop(startTime + 0.2);
+      osc.stop(startTime + 0.35);
     });
   }
 
-  playBossRoar() {
+  playDefeat() {
     if (this.muted || !this.ctx) return;
     this.ensureContext();
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const notes = [392.0, 349.23, 311.13, 261.63]; // G4, F4, Eb4, C4
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.linearRampToValueAtTime(70, now + 0.6);
+    notes.forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const startTime = now + idx * 0.12;
 
-    gain.gain.setValueAtTime(0.35, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, startTime);
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
+      gain.gain.setValueAtTime(0.2, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.25);
 
-    osc.start(now);
-    osc.stop(now + 0.65);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.25);
+    });
   }
 }
