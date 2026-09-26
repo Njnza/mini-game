@@ -61,7 +61,19 @@ export async function runEndpointsTests() {
     '/games/zap-pets/assets/fox.png',
     '/games/zap-pets/assets/bear.png',
     '/games/zap-pets/assets/bunny.png',
-    '/src/lib/three.module.js'
+    '/src/lib/three.module.js',
+    '/games/tower-defense/meta.js',
+    '/games/tower-defense/game.js',
+    '/games/tower-defense/data/towers.js',
+    '/games/tower-defense/data/enemies.js',
+    '/games/tower-defense/data/maps.js',
+    '/games/tower-defense/engine/Map.js',
+    '/games/tower-defense/engine/FXManager.js',
+    '/games/tower-defense/engine/ProjectileManager.js',
+    '/games/tower-defense/engine/EnemyManager.js',
+    '/games/tower-defense/engine/TowerManager.js',
+    '/games/tower-defense/engine/HeroManager.js',
+    '/games/tower-defense/engine/AbilityManager.js'
   ];
 
   try {

@@ -105,9 +105,14 @@ mini-game/
     ├── memory-matrix/          # Game 5: Memory Matrix (3D Card Flip Puzzle)
     │   ├── meta.js
     │   └── game.js
-    └── zap-pets/               # Game 6: Zap Pets: Arena (Open-World Roguelite Survival)
+    ├── zap-pets/               # Game 6: Zap Pets: Arena (Open-World Roguelite Survival)
+    │   ├── meta.js
+    │   └── game.js
+    └── tower-defense/          # Game 7: Cyber Defense: Neon Siege (Multi-Lane Tactical Tower Defense)
         ├── meta.js
-        └── game.js
+        ├── game.js
+        ├── data/               # Turrets, enemies, and 5 tactical maps
+        └── engine/             # Subsystems (Map, Towers, Hero, Enemies, Projectiles, Powers)
 ```
 
 ---

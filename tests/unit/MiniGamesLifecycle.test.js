@@ -116,6 +116,28 @@ export async function runMiniGamesLifecycleTests() {
       assert.doesNotThrow(() => game.update(0.016), `Zap Pets lethal damage simulation must not throw`);
       assert.strictEqual(gameOverFired, true, `Zap Pets onGameOver callback must fire upon death`);
       assert.strictEqual(typeof finalScoreReceived, 'number', 'Final score must be a number');
+    } else if (meta.id === 'tower-defense') {
+      // 1. Build tower
+      const buildRes = game.towers.buildTower('cannon', 2, 2, game.gold);
+      assert.strictEqual(buildRes.success, true, 'Tower build must succeed on open tile');
+
+      // 2. Upgrade tower
+      const upRes = game.towers.upgradeTower(buildRes.tower, null, game.gold);
+      assert.strictEqual(upRes.success, true, 'Tower upgrade must succeed');
+
+      // 3. Hero actions
+      assert.doesNotThrow(() => game.hero.commandMove(150, 150), 'Hero command move must not throw');
+      assert.doesNotThrow(() => game.hero.triggerSkill1(200, 200), 'Hero EMP skill must not throw');
+      assert.doesNotThrow(() => game.hero.triggerSkill2(game.towers.towers), 'Hero Overdrive skill must not throw');
+
+      // 4. Commander Powers
+      assert.doesNotThrow(() => game.abilities.triggerAbility('airstrike', null, 200, game.enemies.enemies, game.towers.towers), 'Airstrike must not throw');
+
+      // 5. Simulate lethal breach
+      game.lives = 1;
+      const testBreachEnemy = { livesTaken: 1, type: 'trooper', x: 700, y: 300, dead: false };
+      game.enemies.handleEnemyBreach(testBreachEnemy);
+      assert.strictEqual(gameOverFired, true, 'Tower Defense game over callback must fire when lives reach 0');
     } else {
       assert.doesNotThrow(() => game.emitGameOver(), `Game '${meta.id}' emitGameOver() must not throw`);
       assert.strictEqual(gameOverFired, true, `Game '${meta.id}' onGameOver callback must fire`);

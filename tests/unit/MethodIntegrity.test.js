@@ -33,5 +33,5 @@ export function runMethodIntegrityTests() {
   });
 
   assert.strictEqual(errors.length, 0, `Method integrity violations found:\n${errors.join('\n')}`);
-  console.log('✓ PASS: All 6 mini-games passed method integrity and lifecycle safety checks');
+  console.log('✓ PASS: All 7 mini-games passed method integrity and lifecycle safety checks');
 }
