@@ -53,25 +53,27 @@ export class PieceGenerator {
     this.rerollCount = 3;
   }
 
-  generateSlotPieces(allowedElements = ['fire', 'water', 'nature'], objective = null, grid = null) {
+  generateSlotPieces(allowedElements = ['fire', 'water', 'nature'], objective = null, grid = null, levelId = 1, movesLeft = 20) {
     for (let i = 0; i < 3; i++) {
       if (!this.slots[i]) {
-        this.slots[i] = this.createSmartPiece(allowedElements, objective, grid);
+        this.slots[i] = this.createSmartPiece(allowedElements, objective, grid, levelId, movesLeft);
       }
     }
   }
 
-  rerollPieces(allowedElements, objective, grid) {
+  rerollPieces(allowedElements, objective, grid, levelId = 1, movesLeft = 20) {
     if (this.rerollCount <= 0) return false;
     this.rerollCount--;
     for (let i = 0; i < 3; i++) {
-      this.slots[i] = this.createSmartPiece(allowedElements, objective, grid);
+      this.slots[i] = this.createSmartPiece(allowedElements, objective, grid, levelId, movesLeft);
     }
     return true;
   }
 
-  createSmartPiece(allowedElements, objective = null, grid = null) {
-    const isDuo = Math.random() < 0.35;
+  createSmartPiece(allowedElements, objective = null, grid = null, levelId = 1, movesLeft = 20) {
+    // Levels 1 to 3: 100% single hex pieces for smooth learning curve
+    // Level 4+: 25% duo pieces with matching elements
+    const isDuo = levelId >= 4 && Math.random() < 0.25;
     const runes = [];
 
     // 1. Identify Target Elements from level objective
@@ -103,12 +105,15 @@ export class PieceGenerator {
       }
     }
 
-    // 3. Smart Element Selection (65% Target bias, 25% Board Wanted, 10% Other)
+    // 3. High Winnability Element Selection
+    // If low on moves or in early levels, target bias goes up to 80%
+    const targetBias = movesLeft <= 6 || levelId <= 2 ? 0.80 : 0.65;
     let elem1;
     const roll = Math.random();
-    if (targetElements.length > 0 && roll < 0.60) {
+
+    if (targetElements.length > 0 && roll < targetBias) {
       elem1 = targetElements[Math.floor(Math.random() * targetElements.length)];
-    } else if (boardWantedElement && roll < 0.85 && allowedElements.includes(boardWantedElement)) {
+    } else if (boardWantedElement && roll < 0.88 && allowedElements.includes(boardWantedElement)) {
       elem1 = boardWantedElement;
     } else {
       elem1 = allowedElements[Math.floor(Math.random() * allowedElements.length)];
@@ -117,18 +122,19 @@ export class PieceGenerator {
     // 4. Smart Tier Scaling
     let tier1 = 1;
     const tierRoll = Math.random();
+
     if (objective && (objective.targetTier >= 3 || objective.type === 'prism' || (objective.tierA >= 3 && elem1 === objective.elemA))) {
-      // For Level requiring Tier 3 or Prism: generous Tier 2 & occasional Tier 3
+      // For Level requiring Tier 3 or Prism: generous Tier 2 (45%) & Tier 3 (20%)
       if (tierRoll < 0.45) {
-        tier1 = 2; // 45% Tier 2
+        tier1 = 2;
       } else if (tierRoll < 0.65) {
-        tier1 = 3; // 20% Tier 3
+        tier1 = 3;
       } else {
-        tier1 = 1; // 35% Tier 1
+        tier1 = 1;
       }
     } else if (objective && objective.targetTier === 2) {
-      // Level requiring Tier 2: 40% Tier 2, 60% Tier 1
-      if (tierRoll < 0.40) {
+      // Level requiring Tier 2: 45% Tier 2, 55% Tier 1
+      if (tierRoll < 0.45) {
         tier1 = 2;
       } else {
         tier1 = 1;
@@ -143,16 +149,16 @@ export class PieceGenerator {
     }
 
     // Board wanted tier synergy boost
-    if (boardWantedElement === elem1 && boardWantedTier > tier1 && Math.random() < 0.5) {
+    if (boardWantedElement === elem1 && boardWantedTier > tier1 && Math.random() < 0.6) {
       tier1 = boardWantedTier;
     }
 
     runes.push({ element: elem1, tier: tier1 });
 
     if (isDuo) {
-      // Second rune: high chance of matching element to facilitate merges
-      const elem2 = Math.random() < 0.70 ? elem1 : allowedElements[Math.floor(Math.random() * allowedElements.length)];
-      const tier2 = Math.random() < 0.35 ? tier1 : 1;
+      // Duo pieces in Hexa Rune always have matching element so they are instantly useful
+      const elem2 = elem1;
+      const tier2 = Math.random() < 0.4 ? tier1 : 1;
       runes.push({ element: elem2, tier: tier2 });
     }
 

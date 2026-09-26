@@ -170,6 +170,8 @@ export async function runMiniGamesLifecycleTests() {
 
     // 6. Test restart
     assert.doesNotThrow(() => game.restart(), `Game '${meta.id}' restart() must not throw`);
+    assert.strictEqual(game.isGameOver, false, `Game '${meta.id}' isGameOver must be false after restart`);
+    assert.strictEqual(game.isRunning, true, `Game '${meta.id}' isRunning must be true after restart`);
 
     // 7. Test destroy & cleanup
     assert.doesNotThrow(() => game.destroy(), `Game '${meta.id}' destroy() must not throw`);

@@ -29,6 +29,13 @@ export default class HexaPuzzleGame extends BaseGame {
     this.selectedSlotIndex = null;
     this.hoverAxial = null;
     this.moveHistory = []; // For Undo functionality
+    this.objectiveProgress = {
+      tierCount: 0,
+      iceCleared: 0,
+      prismCount: 0,
+      dualACount: 0,
+      dualBCount: 0
+    };
 
     // Load persistent progress
     this._loadSavedProgress();
@@ -210,6 +217,9 @@ export default class HexaPuzzleGame extends BaseGame {
   }
 
   loadLevel(levelId) {
+    this.isGameOver = false;
+    this.isPaused = false;
+    this.isRunning = true;
     this.currentLevelId = levelId;
     this.level = getLevelById(levelId);
     this.movesLeft = this.level.moves;
@@ -219,6 +229,13 @@ export default class HexaPuzzleGame extends BaseGame {
     this.hammerCount = 3;
     this.selectedSlotIndex = null;
     this.hoverAxial = null;
+    this.objectiveProgress = {
+      tierCount: 0,
+      iceCleared: 0,
+      prismCount: 0,
+      dualACount: 0,
+      dualBCount: 0
+    };
 
     // Reset grid with level radius & obstacles
     const hexSize = this.level.radius === 3 ? 27 : 33;
@@ -235,9 +252,15 @@ export default class HexaPuzzleGame extends BaseGame {
       }
     }
 
-    // Generate new piece slots with objective bias & board pairing assist!
+    // Generate new piece slots with objective bias & level parameters
     this.pieceGen.reset();
-    this.pieceGen.generateSlotPieces(this.level.allowedElements, this.level.objective, this.grid);
+    this.pieceGen.generateSlotPieces(
+      this.level.allowedElements,
+      this.level.objective,
+      this.grid,
+      this.currentLevelId,
+      this.movesLeft
+    );
     this.selectedSlotIndex = 0; // Auto-select first piece
 
     // Close modals
@@ -246,6 +269,11 @@ export default class HexaPuzzleGame extends BaseGame {
     if (this.defeatModal) this.defeatModal.style.display = 'none';
 
     this.updateHUD();
+
+    // Revive render loop if ctx exists and loop was terminated
+    if (this.ctx && !this.animationFrameId) {
+      this.startLoop(this.ctx);
+    }
   }
 
   _bindControls() {
@@ -369,19 +397,30 @@ export default class HexaPuzzleGame extends BaseGame {
     const btnNextLvl = this.container.querySelector('#hp-btn-next-lvl');
     if (btnNextLvl) this.addTrackedEventListener(btnNextLvl, 'click', () => {
       const nextId = Math.min(LEVELS.length, this.currentLevelId + 1);
-      this.loadLevel(nextId);
+      this.currentLevelId = nextId;
+      this.restart();
     });
 
     const btnReplayVic = this.container.querySelector('#hp-btn-replay-vic');
-    if (btnReplayVic) this.addTrackedEventListener(btnReplayVic, 'click', () => this.loadLevel(this.currentLevelId));
+    if (btnReplayVic) this.addTrackedEventListener(btnReplayVic, 'click', () => {
+      this.restart();
+    });
 
     const btnRetryDef = this.container.querySelector('#hp-btn-retry-def');
-    if (btnRetryDef) this.addTrackedEventListener(btnRetryDef, 'click', () => this.loadLevel(this.currentLevelId));
+    if (btnRetryDef) this.addTrackedEventListener(btnRetryDef, 'click', () => {
+      this.restart();
+    });
 
     const btnUndoDef = this.container.querySelector('#hp-btn-undo-def');
     if (btnUndoDef) this.addTrackedEventListener(btnUndoDef, 'click', () => {
       if (this.defeatModal) this.defeatModal.style.display = 'none';
+      this.isGameOver = false;
+      this.isRunning = true;
       this.undoMove();
+      this.cleanupLoopAndTimers();
+      if (this.ctx) {
+        this.startLoop(this.ctx);
+      }
     });
   }
 
@@ -396,7 +435,13 @@ export default class HexaPuzzleGame extends BaseGame {
   }
 
   triggerReroll() {
-    const success = this.pieceGen.rerollPieces(this.level.allowedElements, this.level.objective, this.grid);
+    const success = this.pieceGen.rerollPieces(
+      this.level.allowedElements,
+      this.level.objective,
+      this.grid,
+      this.currentLevelId,
+      this.movesLeft
+    );
     if (!success) {
       this.fx.addFloatingText('HẾT LƯỢT ĐỔI KHỐI!', 400, 300, '#ef4444', 18);
       return;
@@ -460,7 +505,8 @@ export default class HexaPuzzleGame extends BaseGame {
         card.addEventListener('click', () => {
           const lvlId = parseInt(card.dataset.lvl, 10);
           if (lvlId <= this.unlockedLevels) {
-            this.loadLevel(lvlId);
+            this.currentLevelId = lvlId;
+            this.restart();
           }
         });
       });
@@ -480,10 +526,26 @@ export default class HexaPuzzleGame extends BaseGame {
     // Save state for UNDO before modifying
     this.saveUndoState();
 
-    // Place all runes of the piece
+    // Place all runes of the piece & track objective if rune meets criteria
     coords.forEach((c, idx) => {
-      this.grid.placeRune(c.q, c.r, piece.runes[idx]);
+      const rune = piece.runes[idx];
+      this.grid.placeRune(c.q, c.r, rune);
       this.synthAudio.playPlace();
+
+      if (rune) {
+        const obj = this.level.objective;
+        if ((obj.type === 'merge_tier' || obj.type === 'score_and_tier') &&
+            rune.element === obj.element && rune.tier >= obj.targetTier) {
+          this.objectiveProgress.tierCount++;
+        }
+        if (obj.type === 'prism' && (rune.element === 'prism' || rune.tier >= 4)) {
+          this.objectiveProgress.prismCount++;
+        }
+        if (obj.type === 'dual_merge') {
+          if (rune.element === obj.elemA && rune.tier >= obj.tierA) this.objectiveProgress.dualACount++;
+          if (rune.element === obj.elemB && rune.tier >= obj.tierB) this.objectiveProgress.dualBCount++;
+        }
+      }
     });
 
     this.pieceGen.consumeSlot(slotIndex);
@@ -495,6 +557,25 @@ export default class HexaPuzzleGame extends BaseGame {
       const res = this.grid.processMerges(c.q, c.r, this.fx, this.synthAudio);
       if (res.merged) {
         mergeScore += res.totalScore;
+        if (res.iceBroken) {
+          this.objectiveProgress.iceCleared += res.iceBroken;
+        }
+        if (Array.isArray(res.upgradedRunes)) {
+          const obj = this.level.objective;
+          for (const upg of res.upgradedRunes) {
+            if ((obj.type === 'merge_tier' || obj.type === 'score_and_tier') &&
+                upg.element === obj.element && upg.tier >= obj.targetTier) {
+              this.objectiveProgress.tierCount++;
+            }
+            if (obj.type === 'prism' && (upg.element === 'prism' || upg.tier >= 4)) {
+              this.objectiveProgress.prismCount++;
+            }
+            if (obj.type === 'dual_merge') {
+              if (upg.element === obj.elemA && upg.tier >= obj.tierA) this.objectiveProgress.dualACount++;
+              if (upg.element === obj.elemB && upg.tier >= obj.tierB) this.objectiveProgress.dualBCount++;
+            }
+          }
+        }
       }
     });
 
@@ -503,7 +584,13 @@ export default class HexaPuzzleGame extends BaseGame {
 
     // If all 3 slots empty, deal next set of 3 smart pieces!
     if (this.pieceGen.hasEmptySlots()) {
-      this.pieceGen.generateSlotPieces(this.level.allowedElements, this.level.objective, this.grid);
+      this.pieceGen.generateSlotPieces(
+        this.level.allowedElements,
+        this.level.objective,
+        this.grid,
+        this.currentLevelId,
+        this.movesLeft
+      );
     }
 
     // Auto select next available piece
@@ -537,7 +624,8 @@ export default class HexaPuzzleGame extends BaseGame {
       slots: this.pieceGen.slots.map(s => s ? new Piece(s.id, [...s.runes], s.isDuo) : null),
       selectedSlotIndex: this.selectedSlotIndex,
       hammerCount: this.hammerCount,
-      rerollCount: this.pieceGen.rerollCount
+      rerollCount: this.pieceGen.rerollCount,
+      objectiveProgress: { ...this.objectiveProgress }
     });
 
     if (this.moveHistory.length > 5) this.moveHistory.shift();
@@ -557,6 +645,7 @@ export default class HexaPuzzleGame extends BaseGame {
     this.selectedSlotIndex = prev.selectedSlotIndex;
     if (prev.hammerCount !== undefined) this.hammerCount = prev.hammerCount;
     if (prev.rerollCount !== undefined) this.pieceGen.rerollCount = prev.rerollCount;
+    if (prev.objectiveProgress) this.objectiveProgress = { ...prev.objectiveProgress };
 
     this.synthAudio.playPlace();
     this.fx.addFloatingText('ĐÃ HOÀN TÁC! ↩️', 400, 240, '#c4b5fd', 18);
@@ -575,7 +664,7 @@ export default class HexaPuzzleGame extends BaseGame {
           count++;
         }
       }
-      if (count >= obj.count) isWon = true;
+      if (count >= obj.count || this.objectiveProgress.tierCount >= obj.count) isWon = true;
     } else if (obj.type === 'clear_ice') {
       const remainingIce = this.grid.countIce();
       if (remainingIce === 0) isWon = true;
@@ -586,13 +675,15 @@ export default class HexaPuzzleGame extends BaseGame {
       for (const cell of this.grid.cells.values()) {
         if (cell.rune && cell.rune.element === 'prism') count++;
       }
-      if (count >= obj.count) isWon = true;
+      if (count >= obj.count || this.objectiveProgress.prismCount >= obj.count) isWon = true;
     } else if (obj.type === 'score_and_tier') {
       let tierCount = 0;
       for (const cell of this.grid.cells.values()) {
         if (cell.rune && cell.rune.element === obj.element && cell.rune.tier >= obj.targetTier) tierCount++;
       }
-      if (tierCount >= obj.count && this.score >= obj.targetScore) isWon = true;
+      const hasTier = tierCount >= obj.count || this.objectiveProgress.tierCount >= obj.count;
+      const hasScore = this.score >= obj.targetScore;
+      if (hasTier && hasScore) isWon = true;
     } else if (obj.type === 'dual_merge') {
       let hasA = false;
       let hasB = false;
@@ -600,7 +691,9 @@ export default class HexaPuzzleGame extends BaseGame {
         if (cell.rune && cell.rune.element === obj.elemA && cell.rune.tier >= obj.tierA) hasA = true;
         if (cell.rune && cell.rune.element === obj.elemB && cell.rune.tier >= obj.tierB) hasB = true;
       }
-      if (hasA && hasB) isWon = true;
+      const doneA = hasA || this.objectiveProgress.dualACount >= 1;
+      const doneB = hasB || this.objectiveProgress.dualBCount >= 1;
+      if (doneA && doneB) isWon = true;
     }
 
     if (isWon) {
@@ -676,18 +769,43 @@ export default class HexaPuzzleGame extends BaseGame {
         for (const cell of this.grid.cells.values()) {
           if (cell.rune && cell.rune.element === obj.element && cell.rune.tier >= obj.targetTier) count++;
         }
-        this.objProgEl.textContent = `${count} / ${obj.count}`;
+        const effectiveCount = Math.max(count, this.objectiveProgress.tierCount);
+        this.objProgEl.textContent = `${effectiveCount} / ${obj.count}`;
+        this.objProgEl.style.color = effectiveCount >= obj.count ? '#34d399' : '#fbbf24';
       } else if (obj.type === 'clear_ice') {
         const remainingIce = this.grid.countIce();
         this.objProgEl.textContent = `Còn lại: ${remainingIce}`;
+        this.objProgEl.style.color = remainingIce === 0 ? '#34d399' : '#38bdf8';
       } else if (obj.type === 'score') {
         this.objProgEl.textContent = `${this.score} / ${obj.targetScore}`;
+        this.objProgEl.style.color = this.score >= obj.targetScore ? '#34d399' : '#fbbf24';
       } else if (obj.type === 'prism') {
         let count = 0;
         for (const cell of this.grid.cells.values()) {
           if (cell.rune && cell.rune.element === 'prism') count++;
         }
-        this.objProgEl.textContent = `${count} / ${obj.count}`;
+        const effectiveCount = Math.max(count, this.objectiveProgress.prismCount);
+        this.objProgEl.textContent = `${effectiveCount} / ${obj.count}`;
+        this.objProgEl.style.color = effectiveCount >= obj.count ? '#34d399' : '#fbbf24';
+      } else if (obj.type === 'score_and_tier') {
+        let tierCount = 0;
+        for (const cell of this.grid.cells.values()) {
+          if (cell.rune && cell.rune.element === obj.element && cell.rune.tier >= obj.targetTier) tierCount++;
+        }
+        const effectiveTier = Math.max(tierCount, this.objectiveProgress.tierCount);
+        this.objProgEl.textContent = `Lõi: ${effectiveTier}/${obj.count} | Điểm: ${this.score}/${obj.targetScore}`;
+        this.objProgEl.style.color = (effectiveTier >= obj.count && this.score >= obj.targetScore) ? '#34d399' : '#fbbf24';
+      } else if (obj.type === 'dual_merge') {
+        let hasA = false;
+        let hasB = false;
+        for (const cell of this.grid.cells.values()) {
+          if (cell.rune && cell.rune.element === obj.elemA && cell.rune.tier >= obj.tierA) hasA = true;
+          if (cell.rune && cell.rune.element === obj.elemB && cell.rune.tier >= obj.tierB) hasB = true;
+        }
+        const doneA = hasA || this.objectiveProgress.dualACount >= 1;
+        const doneB = hasB || this.objectiveProgress.dualBCount >= 1;
+        this.objProgEl.textContent = `${obj.elemA}: ${doneA ? '✓' : '✗'} | ${obj.elemB}: ${doneB ? '✓' : '✗'}`;
+        this.objProgEl.style.color = (doneA && doneB) ? '#34d399' : '#fbbf24';
       }
     }
 
@@ -703,12 +821,20 @@ export default class HexaPuzzleGame extends BaseGame {
 
   start() {
     super.start();
+    this.cleanupLoopAndTimers();
     this.loadLevel(this.currentLevelId);
     this.startLoop(this.ctx);
   }
 
   restart() {
+    this.isGameOver = false;
+    this.isPaused = false;
+    this.isRunning = true;
+    this.cleanupLoopAndTimers();
     this.loadLevel(this.currentLevelId);
+    if (this.ctx) {
+      this.startLoop(this.ctx);
+    }
   }
 
   update(dt) {
