@@ -26,6 +26,9 @@ import ZapPetsGame from '../../games/zap-pets/game.js';
 import towerDefenseMeta from '../../games/tower-defense/meta.js';
 import TowerDefenseGame from '../../games/tower-defense/game.js';
 
+import trungThuChaosMeta from '../../games/trung-thu-chaos/meta.js';
+import TrungThuChaosGame from '../../games/trung-thu-chaos/game.js';
+
 export class GameRegistry {
   constructor() {
     this.games = new Map();
@@ -38,6 +41,7 @@ export class GameRegistry {
     this.register(memoryMatrixMeta, MemoryMatrixGame);
     this.register(zapPetsMeta, ZapPetsGame);
     this.register(towerDefenseMeta, TowerDefenseGame);
+    this.register(trungThuChaosMeta, TrungThuChaosGame);
   }
 
   /**

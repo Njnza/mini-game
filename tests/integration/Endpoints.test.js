@@ -73,7 +73,20 @@ export async function runEndpointsTests() {
     '/games/tower-defense/engine/EnemyManager.js',
     '/games/tower-defense/engine/TowerManager.js',
     '/games/tower-defense/engine/HeroManager.js',
-    '/games/tower-defense/engine/AbilityManager.js'
+    '/games/tower-defense/engine/AbilityManager.js',
+    '/games/trung-thu-chaos/meta.js',
+    '/games/trung-thu-chaos/game.js',
+    '/games/trung-thu-chaos/data/skins.js',
+    '/games/trung-thu-chaos/data/enemies.js',
+    '/games/trung-thu-chaos/data/powerups.js',
+    '/games/trung-thu-chaos/data/dialogues.js',
+    '/games/trung-thu-chaos/audio/SynthAudio.js',
+    '/games/trung-thu-chaos/engine/FXManager.js',
+    '/games/trung-thu-chaos/engine/BackgroundRenderer.js',
+    '/games/trung-thu-chaos/engine/Player.js',
+    '/games/trung-thu-chaos/engine/MooncakeManager.js',
+    '/games/trung-thu-chaos/engine/ObstacleManager.js',
+    '/games/trung-thu-chaos/engine/BossManager.js'
   ];
 
   try {

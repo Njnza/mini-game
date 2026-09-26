@@ -138,6 +138,27 @@ export async function runMiniGamesLifecycleTests() {
       const testBreachEnemy = { livesTaken: 1, type: 'trooper', x: 700, y: 300, dead: false };
       game.enemies.handleEnemyBreach(testBreachEnemy);
       assert.strictEqual(gameOverFired, true, 'Tower Defense game over callback must fire when lives reach 0');
+    } else if (meta.id === 'trung-thu-chaos') {
+      // 1. Test thrust action
+      game.player.isThrusting = true;
+      for (let f = 0; f < 5; f++) game.update(0.016);
+      game.player.isThrusting = false;
+      for (let f = 0; f < 5; f++) game.update(0.016);
+
+      // 2. Test Mid-Autumn power-ups
+      assert.doesNotThrow(() => game.triggerTurboPower(), 'Turbo Power trigger must not throw');
+      assert.doesNotThrow(() => game.triggerDecoyPower(), 'Decoy Power trigger must not throw');
+      assert.doesNotThrow(() => game.triggerLiePower(), 'Lie Charm trigger must not throw');
+
+      // 3. Test Boss Battle trigger & damage
+      assert.doesNotThrow(() => game.triggerBossBattle(), 'Boss battle trigger must not throw');
+      assert.strictEqual(game.boss.isActive, true, 'Boss must be active after trigger');
+      assert.doesNotThrow(() => game.boss.damageBoss(4, game.fx), 'Boss damage calculation must not throw');
+
+      // 4. Test Game Over trigger
+      game.lives = 1;
+      assert.doesNotThrow(() => game.handleGameOver(), 'Handle game over must not throw');
+      assert.strictEqual(gameOverFired, true, 'Trung Thu Chaos onGameOver callback must fire');
     } else {
       assert.doesNotThrow(() => game.emitGameOver(), `Game '${meta.id}' emitGameOver() must not throw`);
       assert.strictEqual(gameOverFired, true, `Game '${meta.id}' onGameOver callback must fire`);
