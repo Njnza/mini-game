@@ -81,7 +81,16 @@ export async function runEndpointsTests() {
     '/games/hexa-puzzle/audio/SynthAudio.js',
     '/games/hexa-puzzle/engine/FXManager.js',
     '/games/hexa-puzzle/engine/HexGrid.js',
-    '/games/hexa-puzzle/engine/PieceGenerator.js'
+    '/games/hexa-puzzle/engine/PieceGenerator.js',
+    '/games/cyber-tank/meta.js',
+    '/games/cyber-tank/game.js',
+    '/games/cyber-tank/audio/TankAudio.js',
+    '/games/cyber-tank/data/weapons.js',
+    '/games/cyber-tank/data/levels.js',
+    '/games/cyber-tank/engine/FXManager.js',
+    '/games/cyber-tank/engine/MapEngine.js',
+    '/games/cyber-tank/engine/BulletSystem.js',
+    '/games/cyber-tank/engine/EnemyAI.js'
   ];
 
   try {

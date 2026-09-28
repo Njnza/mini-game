@@ -108,11 +108,23 @@ mini-game/
     ├── zap-pets/               # Game 6: Zap Pets: Arena (Open-World Roguelite Survival)
     │   ├── meta.js
     │   └── game.js
-    └── tower-defense/          # Game 7: Cyber Defense: Neon Siege (Multi-Lane Tactical Tower Defense)
+    ├── tower-defense/          # Game 7: Cyber Defense: Neon Siege (Multi-Lane Tactical Tower Defense)
+    │   ├── meta.js
+    │   ├── game.js
+    │   ├── data/               # Turrets, enemies, and 5 tactical maps
+    │   └── engine/             # Subsystems (Map, Towers, Hero, Enemies, Projectiles, Powers)
+    ├── hexa-puzzle/            # Game 8: Hexa Rune: Alchemy Fusion (Hexagonal Chain Puzzle)
+    │   ├── meta.js
+    │   ├── game.js
+    │   ├── data/
+    │   ├── audio/
+    │   └── engine/
+    └── cyber-tank/             # Game 9: Cyber Tank: Ricochet Protocol (Tactical Ricochet Combat)
         ├── meta.js
         ├── game.js
-        ├── data/               # Turrets, enemies, and 5 tactical maps
-        └── engine/             # Subsystems (Map, Towers, Hero, Enemies, Projectiles, Powers)
+        ├── data/               # Weapons, tanks, and 12 handcrafted campaign levels
+        ├── audio/              # Synthesized procedural audio
+        └── engine/             # Subsystems (MapEngine, BulletSystem, EnemyAI, FXManager)
 ```
 
 ---

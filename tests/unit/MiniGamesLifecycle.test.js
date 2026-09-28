@@ -163,6 +163,27 @@ export async function runMiniGamesLifecycleTests() {
       game.movesLeft = 0;
       assert.doesNotThrow(() => game.handleDefeat(), 'Handle defeat must not throw');
       assert.strictEqual(gameOverFired, true, 'Hexa Puzzle onGameOver callback must fire');
+    } else if (meta.id === 'cyber-tank') {
+      // 1. Test Level Loading
+      assert.doesNotThrow(() => game.loadLevel(0), 'Load level 1 must not throw');
+      assert.strictEqual(game.currentLevelIndex, 0, 'Current level index must be 0');
+
+      // 2. Test Player Abilities
+      assert.doesNotThrow(() => game.triggerPlayerDash(), 'Dash trigger must not throw');
+      assert.doesNotThrow(() => game.deployPlayerMine(), 'Deploy mine must not throw');
+
+      // 3. Test Shooting and Raycasting
+      game.keys.shoot = true;
+      assert.doesNotThrow(() => game.update(0.016), 'Shooting update must not throw');
+      game.keys.shoot = false;
+
+      // 4. Test Lethal Damage Game Over
+      game.player.invulnerableTimer = 0;
+      delete game.player.activePowerups.shield;
+      assert.doesNotThrow(() => game.handleUnitDamage(game.player, 999, false), 'Lethal damage must not throw');
+      assert.strictEqual(game.player.dead, true, 'Player must be dead after lethal damage');
+      assert.strictEqual(game.state, 'DEFEAT', 'Game state must be DEFEAT');
+      assert.strictEqual(gameOverFired, true, 'Cyber Tank onGameOver callback must fire');
     } else {
       assert.doesNotThrow(() => game.emitGameOver(), `Game '${meta.id}' emitGameOver() must not throw`);
       assert.strictEqual(gameOverFired, true, `Game '${meta.id}' onGameOver callback must fire`);

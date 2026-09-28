@@ -29,6 +29,9 @@ import TowerDefenseGame from '../../games/tower-defense/game.js';
 import hexaPuzzleMeta from '../../games/hexa-puzzle/meta.js';
 import HexaPuzzleGame from '../../games/hexa-puzzle/game.js';
 
+import cyberTankMeta from '../../games/cyber-tank/meta.js';
+import CyberTankGame from '../../games/cyber-tank/game.js';
+
 export class GameRegistry {
   constructor() {
     this.games = new Map();
@@ -42,6 +45,7 @@ export class GameRegistry {
     this.register(zapPetsMeta, ZapPetsGame);
     this.register(towerDefenseMeta, TowerDefenseGame);
     this.register(hexaPuzzleMeta, HexaPuzzleGame);
+    this.register(cyberTankMeta, CyberTankGame);
   }
 
   /**

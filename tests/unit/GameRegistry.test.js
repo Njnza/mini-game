@@ -8,12 +8,12 @@ export function runGameRegistryTests() {
   const registry = new GameRegistry();
   const metas = registry.getAllMetas();
 
-  // Test 1: Exactly 8 games registered
-  assert.strictEqual(metas.length, 8, 'Should have exactly 8 registered games');
-  console.log('✓ PASS: GameRegistry contains 8 mini-games');
+  // Test 1: Exactly 9 games registered
+  assert.strictEqual(metas.length, 9, 'Should have exactly 9 registered games');
+  console.log('✓ PASS: GameRegistry contains 9 mini-games');
 
   // Test 2: Check required metadata schema for every game
-  const expectedIds = ['target-hunter', 'neon-snake', 'cyber-flappy', 'brick-breaker', 'memory-matrix', 'zap-pets', 'tower-defense', 'hexa-puzzle'];
+  const expectedIds = ['target-hunter', 'neon-snake', 'cyber-flappy', 'brick-breaker', 'memory-matrix', 'zap-pets', 'tower-defense', 'hexa-puzzle', 'cyber-tank'];
   expectedIds.forEach(id => {
     const meta = registry.getMeta(id);
     assert.ok(meta, `Game metadata for '${id}' should exist`);
